@@ -19,6 +19,11 @@ autonomously.
   work: there are real bugs and outdated dependencies to fix.
 - **Game assets are not in this repository.** The owner will provide the
   Penumbra Overture data files separately. Never commit them.
+- **Never open pull requests for this work**, in this repo, HPL1Engine or
+  OALWrapper, and never propose anything upstream to the original Frictional
+  Games repositories. Work stays on branches in the owner's forks. If the
+  owner wants to send a bug fix upstream, they will make that PR themselves,
+  manually.
 
 ## Goal
 
