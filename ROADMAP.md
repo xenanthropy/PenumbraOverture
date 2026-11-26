@@ -14,7 +14,7 @@ worked. **Decision** = something the owner picks before we start.
 
 ---
 
-## Phase 1 — Small compiler fixes (HPL1Engine)
+## Phase 1 — Small compiler fixes (HPL1Engine) ✅ done 2026-11-26
 
 Quick, low-risk fixes that modern GCC/Clang/MSVC reject. Each one is a
 one-line or few-line change that keeps behaviour the same. Doing them first
@@ -49,6 +49,12 @@ Make CMake find dependencies the modern way instead of relying on the
   targets instead of global `include_directories` / `link_directories`.
 - **Why:** CMake 4.x refuses minimums below 3.5. Target-based setup is also
   what lets Windows/macOS work later.
+- **Also fix:** `add_subdirectory(../OALWrapper ../OALWrapper)` uses a
+  *binary* dir of `../OALWrapper` relative to the build dir. With a build dir
+  directly in the parent folder (e.g. `parent/build`), CMake writes object
+  files, Makefiles and `libHPL.a` **into the sibling repos' source trees**.
+  Use binary dirs inside the build dir instead (e.g. `${CMAKE_BINARY_DIR}/HPL1Engine`).
+  Until then, build from a directory that isn't next to the repos.
 - **Risk:** low. The build *layout* stays the same (repos side by side).
 - **Verify:** configures with no deprecation warnings on CMake 3.28 (and 4.x
   if available); same set of errors as before.
