@@ -168,6 +168,24 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: level faces are thin plates, as in 1.53 (lamp stretching sideways)
+- **Repo:** HPL1Engine
+- **Commit:** `39ba4f0` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newton-4/source/ndShapeConvexPolygon.cpp, ndShapeConvexPolygon.h, README.md, tests/newton153_test.cpp
+- **Problem:** in game the boat lamp still drifted out to its full sideways extension when wiggled. The rod pokes 4 mm out of the side of its ceiling beam. Newton 4 culls a mesh face by the body's centre and otherwise pushes along the face normal, so once a swing put the rod's centre in front of the beam's side face, that face pushed the rod sideways to its 30 degree cone limit. Measured against the original 1.53 library: 1.53 treats each face as a plate with no thickness, uses the shortest way off it as the contact normal whichever side the body's centre is on, and makes no contact when that way goes through the face or nearly along it.
+- **Fix:** always run the convex-convex test against the face without skirts, and drop the face when the contact normal is within about 85 degrees of the face plane (normal . face normal < 0.09, measured). Replaces the earlier sideways-skip guess (`2a91d6c`, below).
+- **Feel:** changes how every prop touches level geometry, towards 1.53. On about 1,100 random box poses against a face, the layer now agrees with 1.53 on contact or no contact 99% of the time (82% before), and where both touch the median normal is the same. Resting, stacking and sliding on tiled floors are unchanged in the tests.
+- **Verified:** headless boat scene (lamp, rod and beam), pushed both ways: the sideways sweep went from 10–30 degrees to under 1 degree. Pushed hard towards one side it swings about half as far as on 1.53 (12 vs 22 degrees); the other side matches. New check with the rod tilted out of the beam's side; 76/76 pass, and the original library passes it too. The full game builds. A 100-box drop test runs slightly faster. Not yet tried in game.
+
+### Newton 1.53 layer: overlapping bodies pushed apart as gently as 1.53
+- **Repo:** HPL1Engine
+- **Commit:** `e5b4c09` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newton-4/source/ndContact.cpp, ndContact.h, README.md, tests/newton153_test.cpp
+- **Problem:** measured against the original 1.53 library, a body overlapping another by d gets no push-out below 1/128 m, then 1.0 m/s per metre beyond that (10 × softness, default 0.1). Newton 4 starts at about 1/512 m with five times the stiffness, and the speed stays on the body, so props popped out of each other and the lamp's rod was thrown out of its beam.
+- **Fix:** `ndContact::JacobianContactDerivative` uses 1.53's dead zone and stiffness.
+- **Feel:** overlaps are corrected more gently, as in 1.53. Bodies rest up to about 8 mm into what they lie on, as they do in 1.53 (measured: 1.53 −10.5 mm, layer −11.0 mm with zero elasticity).
+- **Verified:** push-out speeds match the library from 7 mm to 10 cm of overlap (for example 0.0122 m/s from 2 cm in both, against 0.095 before). Two new checks; 75/75 pass with this commit alone, and the original library passes them too.
+
 ### Newton 1.53 layer: sleep the way the 1.53 library does (replaces the 10-step count)
 - **Repo:** HPL1Engine
 - **Commit:** `49d2484` on `claude/project-thread-msxp3s`
@@ -251,6 +269,7 @@ ones (Phase 3), and all PenumbraOverture files compile.
 - **Verified:** headless boat scene (lamp bodies, joints and beam from the map, 40 s of wave gravity with the per-frame wake): the lamp stood still on 96 steps before, 8 after (the turning points of the swing; ScummVM's 2.36 shows 11 with sleeping off). Two new layer checks (68/68 pass), both fail without the change: a body under its threshold rests only after 10 quiet steps, and a pendulum woken every frame keeps swinging under slowly tilting gravity. Floor, stack and slide checks are unchanged. Not yet tried in game.
 
 ### Newton 1.53 layer: level mesh faces a body can leave sideways are skipped (Phase 6)
+- **Superseded** by the thin-plate entry above (`39ba4f0`): the original library showed what 1.53 really does.
 - **Repo:** HPL1Engine
 - **Commit:** `2a91d6c` on `claude/project-thread-msxp3s`
 - **Files:** external/newton-1.53/newton-4/source/ndShapeConvexPolygon.cpp, external/newton-1.53/README.md, external/newton-1.53/tests/newton153_test.cpp
