@@ -24,6 +24,10 @@ autonomously.
   Games repositories. Work stays on branches in the owner's forks. If the
   owner wants to send a bug fix upstream, they will make that PR themselves,
   manually.
+- **The same goes for Newton Dynamics.** We vendor Julio Jerez's Newton 1.53
+  compatibility layer and finish it locally. **Never contribute anything to
+  the newton-dynamics repository**: no PRs, issues, discussion posts or
+  comments. Our completion of that layer stays local to these forks.
 
 ## Repository layout and change log
 
