@@ -627,6 +627,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Gameplay and engine bugs
 
+### Rotate a held object with the mouse (V), backported from Amnesia
+- **Repo:** PenumbraOverture
+- **Commit:** `4cf4490` on `claude/project-thread-msxp3s`
+- **Files:** PlayerState_Interact.cpp, PlayerState_Interact.h, ButtonHandler.cpp, MainMenu.cpp
+- **Problem:** Penumbra has no way to turn a held object. A body grabbed at a point (`mbPickAtPoint`, e.g. chairs) hangs from that point under gravity, so it swings round to its heaviest side, often upside down, and players had to knock it against walls to turn it back. Amnesia (HPL2, `LuxPlayerState_InteractGrab.cpp`) lets you hold a key and move the mouse to rotate it. Amnesia's key is R, which Penumbra already uses for InteractMode.
+- **Fix:** new action `RotateObject`, default **V**, rebindable under Options > Controls > Actions ("Rotate Object:", with an English fallback because the retail language files have no entry). While it is held during a grab, mouse movement turns the held object instead of the camera: left/right about the vertical, up/down about the camera's right axis (honours Invert Mouse Y). The first use starts an orientation hold that lasts until the object is let go: the wanted orientation is stored relative to the camera's yaw (so it turns with the player, but stays level when looking up or down), and Amnesia's controller drives the body there (wanted spin = 100 x angle error, capped at 6 rad/s; torque = inertia x 40 x spin error). Unlike Amnesia, the angle error is a true axis-angle instead of `cross(up, wantedUp) * angle`, which goes weak near zero. A body grabbed at a point switches to being carried at its centre of mass with gravity off, as Amnesia carries everything; gravity is restored on release as before.
+- **Feel:** a grab that never uses the key is unchanged, line for line. With the key used, the hold removes 2/3 of the spin error per 60 Hz step, so it can't overshoot the way the old brake did on thin props (see the spin brake entry below).
+- **Verified:** game builds (GCC 13). Not yet tried in game: the rotation direction and speed (1.5 x look speed) are first guesses to check.
+
 ### Choppy streamed music in the main menu
 - **Repos / commits:** PenumbraOverture `cddb660`, OALWrapper `d6498f3`, on `claude/project-thread-msxp3s`
 - **Files:** PenumbraOverture Init.cpp; OALWrapper sources/OAL_Device.cpp
