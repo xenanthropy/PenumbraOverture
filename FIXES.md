@@ -176,6 +176,49 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: stubs and behaviour fixes (Phase 5, step 5)
+- **Repo / commits:** HPL1Engine `50900b6` (sleep query), `8caf8b1` (impulse,
+  freeze), `84cce93` (joint stop helpers), `e130544` (ball cone axis),
+  `e5e1480` (continuous collision flag), `d5d67da` (layer README)
+- **Files (all in `external/newton-1.53/`):** `NewtonBody.cpp`,
+  `NewtonBody.h`, `newtonWorld.cpp`, `NewtonDeprecated.cpp`,
+  `joints/NewtonBallSocket.cpp`, `README.md`
+- **Problems and fixes** (1.53 behaviour, from the Newton 2.36 source where
+  1.53's isn't available):
+  - `NewtonBodyGetSleepingState` returned 1 for a *sleeping* body; 1.53
+    returns 1 for *active*, which HPL's `GetEnabled` relies on (used by the
+    character controller, mesh entities and save games). Inverted.
+  - `NewtonAddBodyImpulse` did nothing (throwing, hits, explosions). Its
+    argument is the change in velocity wanted *at the given point*, not an
+    impulse; it now solves for the impulse that gives exactly that, applies
+    it to linear and angular velocity and wakes the body.
+  - `NewtonWorldFreezeBody` did nothing (HPL disables bodies with it, e.g. a
+    door settling at its limit). Now clears velocity and sleeps the body.
+  - `NewtonHingeCalculateStopAlpha`, `NewtonSliderCalculateStopAccel`,
+    `NewtonCorkscrewCalculateStopAlpha/Accel` returned 0. HPL's door, lever,
+    drawer and screw limits are built on them. Now 1.53's formula:
+    100 × error − 1.01 × speed / timestep, ignoring speed towards the stop,
+    with the hinge's ×16 factor below its stop.
+  - `NewtonBallSetConeLimits` ignored the cone axis, so ragdoll/chain/lamp
+    limits were centred on the wrong axis (twist limited as cone and vice
+    versa). Now re-aims the joint frame to the given axis, with 1.53's
+    thresholds and clamps.
+  - `NewtonBodyGetContinuousCollisionMode` always returned 0, so save games
+    stored the wrong value. The flag is now stored and reported back (no
+    simulation effect, as in 1.53).
+- **Verified (scratch test programs, Newton only):** an impulse at the centre
+  of mass changes velocity by exactly the requested amount; off-centre, the
+  point's velocity changes by exactly the request and the body spins; frozen
+  bodies report 0 and stay put, unfrozen ones report 1 and move again; the
+  stop helpers return the 1.53 values for a hinge at 0.5 rad / 1 rad/s and a
+  slider at 0.25 m / 0.5 m/s (past the stop, short of it, exactly on it); a
+  ball joint with cone axis +X, 30° cone and 10° twist now stops a twist at
+  10.1° (it reached 30° before the fix) and a tilt at 30.0°; the continuous
+  collision flag round-trips. The step-4 tests still pass. **Not verified:**
+  the corkscrew helpers (same code path as the slider/hinge ones, not run
+  separately), and anything in-game. The stop helpers have no effect yet,
+  because the joint wrappers ignore the callbacks' results (step 6).
+
 ### Newton 1.53 layer: matrix copies overran by 8 floats on GCC/Clang
 - **Repo / commit:** HPL1Engine `d5282e1`
 - **Files:** `external/newton-1.53/newton-4/source/ndMatrix.h`,

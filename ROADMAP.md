@@ -200,13 +200,10 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
    joint force/angle/omega readouts, contact force, per-body freeze
    thresholds, solver/friction model, material continuous collision).
    Along the way: fixed a matrix-copy memory overrun in the core on GCC/Clang.
-5. Fill the stubs: `NewtonAddBodyImpulse`, `NewtonWorldFreezeBody`, the three
-   `Calculate Stop` functions, body continuous-collision get/set. Also, found
-   during step 4:
-   - `NewtonBodyGetSleepingState` returns 1 for *sleeping*; 1.53 (and HPL's
-     `GetEnabled`) mean 1 = *active*. Inverted.
-   - `NewtonBallSetConeLimits` isn't a stub (a working version exists further
-     down the file), but it ignores the cone pin HPL passes.
+5. ✅ Fill the stubs: `NewtonAddBodyImpulse`, `NewtonWorldFreezeBody`, the
+   four `Calculate Stop` helpers, body continuous-collision get/set. Also
+   fixed the inverted `NewtonBodyGetSleepingState` and made
+   `NewtonBallSetConeLimits` use the cone axis it's given.
 6. Make the joint wrappers honour HPL's limit callbacks (return value,
    acceleration, min/max friction). **Highest risk for doors and levers.**
 7. Contact callbacks: run begin/process/end back to back per pair (HPL keeps
