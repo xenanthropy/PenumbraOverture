@@ -49,6 +49,21 @@ Get Penumbra Overture and its engine building cleanly on modern Linux and
 Windows (and ideally macOS), fix bugs, and improve performance, while keeping
 the original game behaviour.
 
+### Physics feel comes first
+
+The move from Newton 1.53 to Julio's compatibility layer on Newton 4 (Phase 5)
+must keep the **feel of Penumbra's physics as close to the original as
+possible**. This is the owner's top priority for the physics work. Very slight
+differences are acceptable; significant ones (objects sliding, bouncing or
+stacking differently, door/lever weight, how the player pushes and throws
+things) are not.
+
+- When the layer's Newton 4 defaults and real 1.53 behaviour disagree, choose
+  **fidelity to 1.53** (e.g. substeps, clamps, callback order, limits).
+- Call out any change that could affect feel, and say whether it was checked.
+- If fidelity can't be reached on Newton 4, the documented fallback is the
+  Newton 2.36 / ScummVM route (see ROADMAP.md, Phase 5).
+
 ## Performance testing
 
 Once the game runs, we profile and optimise it. The baseline to compare
