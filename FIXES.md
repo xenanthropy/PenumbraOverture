@@ -148,6 +148,34 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### AngelScript 2.7.1b built from source (portability mode)
+- **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `4e6e58b` (vendor, unmodified),
+  `a60f781` (GCC fix), `062df1a` (CMake target), `eaa0dde` (stdcall warnings)
+- **Files:** new `external/angelscript/` (2.7.1b `include/` + `source/`,
+  `LICENSE`, `README.md`, `CMakeLists.txt`); `CMakeLists.txt`;
+  `include/system/Script.h`
+- **Problem:** the engine depended on a prebuilt 32-bit `libangelscript.a`
+  from the old bundle. The stock 32-bit build's native-call assembly
+  (`as_callfunc_x86.cpp`) pushes arguments without keeping the stack 16-byte
+  aligned. That is the root cause of the AMD/Mesa "coin in the vice" crash
+  (see KNOWN_ISSUES.md).
+- **Fix:** vendored the original 2.7.1b source from AngelScript's SourceForge
+  SVN (`branches/2.7.1`, r90; zlib licence). One local change: the
+  `return 0;` → `return asUPtr();` GCC fix in `angelscript.h`, marked
+  with an `HPL1Engine:` comment as the zlib licence requires. It is built as a
+  static library with `AS_MAX_PORTABILITY` as a **public** definition, so
+  the engine and the game also register script functions through generic
+  wrappers (`Script.h` already had them). This is required on 64-bit, where
+  2.7.1b has no native calls, and avoids the misaligned-stack bug on 32-bit.
+  The prebuilt AngelScript is no longer used. Also: `Script.h` now only uses
+  `__attribute__((stdcall))` on 32-bit x86 (173 warnings gone).
+- **Verified:** builds on GCC 13 x86_64 with zero errors; the game reaches the
+  final link, and the only unresolved part is the 32-bit `libNewton.a`.
+  `AS_MAX_PORTABILITY` is present in both the HPL and game compile flags.
+  Not run yet. In portability mode scripts use `scriptstring` instead of
+  `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
+  errors in the log on first run.
+
 ### Replace GLee with GLEW
 - **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `a45a8c5` (includes), `8bc2418`
   (glewInit), `eb2e44c` (extension checks), `f1646cf` (CMake),

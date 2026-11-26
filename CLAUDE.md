@@ -116,8 +116,9 @@ parent/
 - Last real code change: 2014 ("Updated code for new OALWrapper");
   2017 commits are whitespace-only.
 - Since Phase 2 the `HPL` target finds and links its own dependencies
-  (`find_package` + `cmake/FindCg.cmake`). Newton and AngelScript are still
-  IMPORTED from `HPL_DEPENDENCIES_DIR` until Phases 4/5.
+  (`find_package` + `cmake/FindCg.cmake`). AngelScript 2.7.1b is vendored in
+  `external/angelscript` (Phase 4, always `AS_MAX_PORTABILITY`). Newton is
+  still IMPORTED from `HPL_DEPENDENCIES_DIR` until Phase 5.
 
 ### OALWrapper (audio, static lib)
 
@@ -179,9 +180,11 @@ keeping in mind it targets ScummVM's own platform layer, not SDL directly.
 ## Building (current, expected to fail)
 
 Use a build folder that is **not** inside any of the three repos. Point
-`HPL_DEPENDENCIES_DIR` at a folder containing `include/angelscript.h`,
-`include/Newton.h` and `lib/linux/lib{angelscript,Newton}.a` (temporary,
-until Phases 4 and 5 build these from source).
+`HPL_DEPENDENCIES_DIR` at a folder containing only `include/Newton.h` and
+`lib/linux/libNewton.a` (temporary, until Phase 5 builds Newton from
+source). Don't leave the old bundle's `angelscript.h` in there: it would
+shadow the vendored one. AngelScript is built from
+`HPL1Engine/external/angelscript` since Phase 4.
 
 ```sh
 mkdir build && cd build

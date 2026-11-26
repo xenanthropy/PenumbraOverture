@@ -114,7 +114,7 @@ Make CMake find dependencies the modern way instead of relying on the
   "supported features" list matches the original game's log on the same
   machine.
 
-## Phase 4 — AngelScript from source (HPL1Engine)
+## Phase 4 — AngelScript from source (HPL1Engine) ✅ done 2026-11-26
 
 **Decision (made 2026-11-26): stay on 2.7.1b for now**, built from source in
 portability mode. The reason is to make only one big change at a time, and
