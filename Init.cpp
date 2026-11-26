@@ -250,21 +250,8 @@ bool cInit::Init(tString asCommandLine)
 
 	// CREATE NEEDED DIRS /////////////////////
 	gsUserSettingsPath = sPersonalDir + PERSONAL_RELATIVEROOT PERSONAL_RELATIVEGAME _W("settings.cfg");
-	#ifndef WIN32
-	// For Mac OS X and Linux move the OLD Episode 1 folder to Penumbra/Overture and symlink to the old path
-	if (FolderExists(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra Overture/Episode1"))
-			&& !IsFileLink(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra Overture/Episode1"))) {
-		// Create the new folder
-		if(!FolderExists(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra")))
-			CreateFolder(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra"));
-		// Move the Older Episode 1 to the new Overture
-		RenameFile(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra Overture/Episode1"),
-				sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra/Overture"));
-		// Link back the old one to the new one
-		LinkFile(sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra/Overture"),
-			sPersonalDir + PERSONAL_RELATIVEROOT _W("Penumbra Overture/Episode1"));
-	}
-	#endif
+	// (The retail game moved its old "Penumbra Overture/Episode1" save folder
+	// here. This build uses its own folder and never touches the retail one.)
 
 	tWString vDirs[] = { PERSONAL_RELATIVEPIECES //auto includes ,
 			PERSONAL_RELATIVEROOT PERSONAL_RELATIVEGAME_PARENT,
@@ -421,6 +408,7 @@ bool cInit::Init(tString asCommandLine)
 
 	pSetUp = hplNew( cSDLGameSetup, () );
 	mpGame = hplNew( cGame, ( pSetUp,Vars) );
+
     
 #ifdef  TIMELIMIT
 	CheckTimeLimit();

@@ -52,24 +52,28 @@ class cMainMenu;
 
 #include "GameTypes.h"
 
+// Where settings, saves and logs go, relative to the user's home (Documents
+// on Windows). Deliberately NOT the retail game's folders (.frictionalgames/
+// Penumbra/Overture, Documents/Penumbra Overture/Episode1, ...), so this build
+// never overwrites a retail install's settings, logs or saves.
 #if defined(WIN32)
 	#define PERSONAL_RELATIVEROOT
 	#define PERSONAL_RELATIVEPIECES
 	#define PERSONAL_RELATIVEPIECES_COUNT 0
-	#define PERSONAL_RELATIVEGAME_PARENT _W("Penumbra Overture/")
-	#define PERSONAL_RELATIVEGAME _W("Penumbra Overture/Episode1/")
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
 #elif defined(__linux__)
-	#define PERSONAL_RELATIVEROOT _W(".frictionalgames/")
-	#define PERSONAL_RELATIVEPIECES _W(".frictionalgames"),
-	#define PERSONAL_RELATIVEPIECES_COUNT 1
-	#define PERSONAL_RELATIVEGAME_PARENT _W("Penumbra/")
-	#define PERSONAL_RELATIVEGAME _W("Penumbra/Overture/")
+	#define PERSONAL_RELATIVEROOT _W(".local/share/")
+	#define PERSONAL_RELATIVEPIECES _W(".local"), _W(".local/share"),
+	#define PERSONAL_RELATIVEPIECES_COUNT 2
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
 #else
-	#define PERSONAL_RELATIVEROOT _W("Library/Preferences/Frictional Games/")
-	#define PERSONAL_RELATIVEPIECES _W("Library"), _W("Library/Preferences"), _W("Library/Preferences/Frictional Games"),
-	#define PERSONAL_RELATIVEPIECES_COUNT 3
-	#define PERSONAL_RELATIVEGAME_PARENT _W("Penumbra/")
-	#define PERSONAL_RELATIVEGAME _W("Penumbra/Overture/")
+	#define PERSONAL_RELATIVEROOT _W("Library/Application Support/")
+	#define PERSONAL_RELATIVEPIECES _W("Library"), _W("Library/Application Support"),
+	#define PERSONAL_RELATIVEPIECES_COUNT 2
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
 #endif
 
 //--------------------------------------------------------
