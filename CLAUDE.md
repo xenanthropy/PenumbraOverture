@@ -208,6 +208,9 @@ make -j"$(nproc)"
 ```
 
 The game binary is `overture.bin` in the build folder.
+It keeps its settings, saves and `hpl.log` in
+`~/.local/share/PenumbraOverture/` (Linux), not in the retail game's
+`~/.frictionalgames` folder, so the two never overwrite each other.
 
 ### Physics test
 

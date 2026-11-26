@@ -509,6 +509,29 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Gameplay and engine bugs
 
+### Our build shared the retail game's settings, saves and logs
+- **Repo:** PenumbraOverture
+- **Commit:** `bb8268d` on `claude/project-thread-msxp3s`
+- **Files:** Init.h, Init.cpp
+- **Problem:** the build used the same user folder as the retail game (`~/.frictionalgames/Penumbra/Overture` on Linux). Xenan's first run overwrote the retail `hpl.log`, and it would read the retail settings (which is how the -1 resolution below got in) and could overwrite retail saves.
+- **Fix:** settings, saves and logs now go to `PenumbraOverture/` under `~/.local/share` (Linux), `Documents` (Windows) and `~/Library/Application Support` (macOS). Removed the retail code that moved an old `Penumbra Overture/Episode1` folder, which would now look in the wrong place. `XDG_DATA_HOME` isn't read yet; the path is always relative to `$HOME`.
+- **Verified:** a run under Xvfb wrote `hpl.log` and `settings.cfg` to `~/.local/share/PenumbraOverture/` and created no `.frictionalgames` folder. Not built on Windows or macOS.
+
+### Audio never opened: device "NULL"
+- **Repo:** HPL1Engine
+- **Commit:** `1aebde8` on `claude/project-thread-msxp3s`
+- **Files:** sources/impl/LowLevelSoundOpenAL.cpp
+- **Problem:** start-up stopped with `Failed to inialize Audio Trying fallback driver` / `FATAL ERROR: Failed! Check your OpenAL installation` (Xenan, CachyOS/PipeWire). Penumbra's settings default `DeviceName` to the string `"NULL"`, meaning no particular device, and the fallback asked for `"NULL"` again. OpenAL Soft has no device by that name: `alcOpenDevice("NULL")` fails, while `alcOpenDevice(NULL)` and `alcOpenDevice("")` open the default device.
+- **Fix:** `"NULL"` is treated as an empty name (default device); if a named device fails, the fallback opens the default device.
+- **Verified:** under Xvfb with OpenAL Soft's null backend the log shows `Trying to open audio device... Success!` with the default settings. Not yet confirmed on Xenan's machine.
+
+### -1 x -1 screen size dropped to a 640x480 window
+- **Repos / commits:** HPL1Engine `33d8097`, PenumbraOverture `8c10835`, on `claude/project-thread-msxp3s`
+- **Files:** HPL1Engine sources/impl/LowLevelGraphicsSDL.cpp; PenumbraOverture Init.cpp
+- **Problem:** the retail settings had `Width="-1" Height="-1"` (the retail Linux port's "desktop size"). `SDL_SetVideoMode(-1, -1, ...)` fails, so the game showed "Could not set displaymode and 640x480 is used instead!".
+- **Fix:** the engine uses SDL's current desktop size when the width or height is 0 or less (800x600 if SDL can't tell). The game then reads back the size actually set, so the options menu and saved settings show it. This also saves the real numbers in place of -1, so a later desktop resolution change isn't followed automatically.
+- **Verified:** under Xvfb (1280x1024 screen) with `-1 x -1` the log shows `Using desktop resolution 1280 x 1024` and the mode is set.
+
 Bugs found while clearing compiler warnings. Each was a real fault, not just
 noise; the warning pointed at it.
 

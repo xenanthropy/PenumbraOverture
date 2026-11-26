@@ -117,6 +117,14 @@ that exists is 32-bit (section 3a), so a 64-bit build cannot link it.
 - An old Arch report blames a system `libvorbis` for a crash; the commercial
   release ships its own `libvorbis.so.0` for this reason.
 
+### Found in our build
+
+- **Segfault after a fatal error.** `FatalError()` calls `exit(1)` from
+  wherever it is, with the engine half built. Static destructors and
+  `atexit` handlers then run against that state and often segfault. The real
+  error is the last line of `hpl.log`. To fix: shut down in order, or
+  `_exit` after flushing the log.
+
 ## 3. Dependencies: what's needed and where to get it
 
 | Dependency | Version used originally | Available today | Notes |
