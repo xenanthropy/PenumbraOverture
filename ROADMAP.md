@@ -84,7 +84,7 @@ Make CMake find dependencies the modern way instead of relying on the
 
 ## Phase 3 — Replace GLee (HPL1Engine)
 
-**Decision:** which GL loader. Recommendation: **GLEW**.
+**Decision (made 2026-11-26): GLEW.**
 - *GLEW*: closest drop-in for GLee. Same function names (`glBindBufferARB`,
   `glBeginFragmentShaderATI`, ...), extension flags map one-to-one
   (`GLEE_ARB_multisample` → `GLEW_ARB_multisample`), packaged on every
@@ -110,9 +110,10 @@ Make CMake find dependencies the modern way instead of relying on the
 
 ## Phase 4 — AngelScript from source (HPL1Engine)
 
-**Decision:** keep 2.7.1b, or port to a modern AngelScript (2.3x).
-Recommendation: **keep 2.7.1b for now**, built from source in portability
-mode. A modern AngelScript port can come later as its own project.
+**Decision (made 2026-11-26): stay on 2.7.1b for now**, built from source in
+portability mode. The reason is to make only one big change at a time, and
+Newton is the big one. A modern AngelScript port can come later as its own
+project.
 - Keeping 2.7.1b means the scripts behave exactly as they always have.
   Portability mode avoids the stack-alignment problem behind the AMD/Mesa
   vice crash, and HPL1 already supports it.
@@ -141,63 +142,70 @@ mode. A modern AngelScript port can come later as its own project.
   elsewhere (removes 173 warnings).
 - **Verify:** warnings gone.
 
-## Phase 5 — Port physics to Newton 2.36 (HPL1Engine)
+## Phase 5 — Replace the prebuilt Newton 1.53 (HPL1Engine)
 
-The largest phase. All Newton code lives in 11 files,
-`HPL1Engine/sources/impl/*Newton*` (about 2,700 lines). The game itself never
-calls Newton.
+All Newton code lives in 11 files, `HPL1Engine/sources/impl/*Newton*` (about
+2,700 lines). The game itself never calls Newton.
 
-**Decision:** where the Newton 2.36 source comes from.
-- ScummVM's copy (`engines/hpl1/engine/libraries/newton`, about 60k lines),
-  which has small ScummVM-specific changes we'd revert.
-- Or an original 2.36 release if we can find one. Newton itself is zlib
-  licensed.
+**Decision (pending): which Newton.** New option found 2026-11-26.
 
-**5.1 Vendor Newton 2.36 as a CMake target**
-- **Repo/files:** new `HPL1Engine/external/newton/` + licence; CMake target
-  `newton` linked into `HPL`.
-- **Verify:** the Newton library builds on its own (64-bit), with no
-  ScummVM headers left.
+- **A. Julio Jerez's Newton 1.53 compatibility layer (recommended).** The
+  Newton author is writing a backport of the *1.53 API* on top of Newton 4.
+  It was started for an HPL1/Penumbra port (newton-dynamics discussion #435,
+  2026). Path: `newton-4.00/applications/toolsAndWrapers/newton-1.53` in
+  https://github.com/JulioJerez/newton-dynamics (master, still being worked on).
+  Licence: zlib.
+  - Our check: its `Newton.h` declares **every one** of the original 1.53
+    functions, including all 90 that HPL1 uses. So HPL1's physics code
+    could stay almost unchanged: no callback restructuring, no signature
+    porting.
+  - Five functions HPL1 uses are still stubs (`ndAssert(0)`):
+    `NewtonWorldFreezeBody`, `NewtonAddBodyImpulse`,
+    `NewtonHingeCalculateStopAlpha`, `NewtonSliderCalculateStopAccel`,
+    `NewtonCorkscrewCalculateStopAccel`. The last three are joint limits,
+    used for doors, levers and sliders.
+  - It is Windows-first right now. The CMake hard-codes MSVC flags, and
+    `NewtonUtils.h` uses `_finite`/`_isnan`, so it doesn't compile on GCC
+    yet. These are small portability fixes.
+  - Underneath, it is the Newton 4 solver, so physics feel needs in-game
+    testing (true of any option except the 32-bit blob).
+- **B. Port HPL1 to Newton 2.36** (ScummVM's approach). Proven to work, but
+  means rewriting the contact callbacks and porting signatures across all 11
+  files.
+- **C. Keep the 32-bit blob.** Dead end for 64-bit.
 
-**5.2 Mechanical API changes**
-- Shape functions gain a `shapeID` argument (`NewtonCreateBox`, `Sphere`,
-  `Capsule`, `Cylinder`, `CompoundCollision`, tree collision) in
-  `CollideShapeNewton.cpp`, `PhysicsWorldNewton.cpp`.
-- `NewtonCreate`, `NewtonCreateBody` argument changes.
-- Force/torque and transform callbacks gain `timestep, threadIndex`
-  (`PhysicsBodyNewton.cpp`).
-- `NewtonAddBodyImpulse` → `NewtonBodyAddImpulse`.
-- **Verify:** these files compile.
+### Plan if we go with A
 
-**5.3 Contact callbacks (the delicate part)**
-- **Files:** `PhysicsMaterialNewton.cpp/.h`.
-- **Change:** 1.x calls Begin/Process/End once per contact point. 2.x hands
-  over a contact joint that we loop through, and there is no End callback.
-  HPL1 uses these callbacks for impact and slide sounds, particle effects,
-  and friction/elasticity per material pair. We restructure following
-  ScummVM's approach, using a contact iterator.
-- **Risk:** medium to high. The old community "Newton2" branch broke here
-  (walking into anything killed the player).
-- **Verify:** compiles; then in-game checks in Phase 6.
+**5.1 Vendor the 1.53 layer + its Newton 4 core**
+- **Repo/files:** new `HPL1Engine/external/newton-1.53/` (pinned to a
+  specific upstream commit, recorded in FIXES.md) + zlib licence. Our own
+  small CMake target (static library, no demos), instead of upstream's
+  MSVC-only CMakeLists.
+- **Verify:** the library builds on GCC/Clang 64-bit.
 
-**5.4 Freeze/sleep API**
-- **Files:** `PhysicsBodyNewton.cpp`, `PhysicsWorldNewton.cpp`.
-- **Change:** `NewtonWorldFreezeBody/UnfreezeBody`, `NewtonBodyGetAutoFreeze`,
-  `NewtonBodyGetSleepingState` no longer exist; map onto 2.x's
-  sleep/auto-sleep functions.
-- **Risk:** medium. Objects may settle or wake differently.
+**5.2 GCC/Clang portability fixes in the layer**
+- `_finite`/`_isnan` → `std::isfinite`/`std::isnan`, any other MSVC-isms.
+- **Verify:** compiles cleanly with GCC 13.
 
-**5.5 Joints and character body**
-- **Files:** `PhysicsJoint*Newton.cpp`, `CharacterBodyNewton.cpp`.
-- **Change:** joints mostly carry over; check each against 2.36 and
-  ScummVM. The character body uses ray casts and convex casts, which need
-  checking.
-- **Verify:** compiles; Phase 6.
+**5.3 Fill in the stubs HPL1 needs**
+- The five functions above. We can ask the owner whether to keep these as
+  local patches or watch upstream for them.
+- **Risk:** medium. Joint limits directly affect doors and levers.
+- **Verify:** compiles; Newton's own demos (tutorial 05, joints) behave;
+  then in-game.
 
-**5.6 Remove the old prebuilt Newton references** from CMake.
+**5.4 Hook into HPL1 and remove the blob**
+- Point HPL1 at the new target, drop the IMPORTED `libNewton.a`.
+  HPL1's `impl/*Newton*` files should need few or no changes.
+- **Verify:** HPL1Engine and the game link as a native 64-bit binary, with
+  no prebuilt libraries except Cg.
 
-**Verify (whole phase):** HPL1Engine and the game link as a native 64-bit
-binary, with no prebuilt libraries except Cg.
+### Plan if we go with B
+
+As before: vendor Newton 2.36, mechanical signature changes (`shapeID`,
+`NewtonCreate`, callbacks gain `timestep`/`threadIndex`), restructure the
+contact callbacks in `PhysicsMaterialNewton.cpp` following ScummVM, replace
+the freeze/sleep API, check joints and the character body, remove the blob.
 
 ## Phase 6 — First run and in-game testing (needs the owner's assets)
 

@@ -200,6 +200,25 @@ Options, to discuss before choosing:
 3. Port to a different physics library (Bullet, Jolt). This is far more
    work, and physics behaviour would change.
 
+### 4a. New: the Newton author's 1.53 compatibility layer (2026)
+
+In newton-dynamics discussion #435 (Aug–Oct 2026), Julio Jerez confirmed the
+original 1.53 source is gone. He started a backport that implements the 1.53
+API on top of Newton 4, aimed at HPL1/Penumbra:
+`newton-4.00/applications/toolsAndWrapers/newton-1.53` in
+https://github.com/JulioJerez/newton-dynamics. Checked 2026-11-26 (master
+`294f27f`):
+
+- Covers the full original 1.53 function list, including all 90 functions
+  HPL1 calls.
+- Five that HPL1 uses are still stubs: `NewtonWorldFreezeBody`,
+  `NewtonAddBodyImpulse`, `NewtonHingeCalculateStopAlpha`,
+  `NewtonSliderCalculateStopAccel`, `NewtonCorkscrewCalculateStopAccel`.
+- Windows/MSVC-only for now (MSVC flags in CMake; `_finite`/`_isnan` break
+  GCC).
+
+See ROADMAP.md Phase 5 for the options.
+
 ## 5. Notes from the Windows guides (2010–2013)
 
 From JKO's guide (2010, Visual Studio 2010) and the "compiling under Visual
