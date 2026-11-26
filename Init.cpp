@@ -409,6 +409,13 @@ bool cInit::Init(tString asCommandLine)
 	pSetUp = hplNew( cSDLGameSetup, () );
 	mpGame = hplNew( cGame, ( pSetUp,Vars) );
 
+	// The engine may not use the size asked for: -1 in the settings means the
+	// desktop size, and a mode that can't be set falls back to 640x480. Keep
+	// the options menu and the saved settings in step with the real size.
+	{
+		cVector2f vRealSize = mpGame->GetGraphics()->GetLowLevel()->GetScreenSize();
+		mvScreenSize = cVector2l((int)vRealSize.x, (int)vRealSize.y);
+	}
     
 #ifdef  TIMELIMIT
 	CheckTimeLimit();
