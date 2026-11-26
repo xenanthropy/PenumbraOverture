@@ -242,6 +242,20 @@ the freeze/sleep API, check joints and the character body, remove the blob.
   (`redist/` with `materials.cfg`, `resources.cfg`).
 - **Verify:** game starts and reaches the main menu.
 
+**6.1b Finding the game data automatically** (owner's idea, not started)
+- The game currently expects its data next to it (the working folder: the
+  `redist/` layout in the source release). The Steam Linux install keeps the
+  same files (`graphics/`, `models/`, `materials.cfg`, `resources.cfg`, ...)
+  directly in the game's root folder, not in `redist/`.
+- Search order:
+  1. Locally: the working folder or `./redist`, recognised by the data
+     folders/config files being present.
+  2. Common install paths: the Steam library (Linux first; also Windows),
+     then GOG, and possibly other stores.
+  3. If nothing is found: ask the player to pick the Penumbra Overture
+     folder. That needs some kind of launcher/GUI; to be worked out later.
+- Remember the folder that worked so the search only runs once.
+
 **6.2 Test checklist** (owner plays, we compare against the original game):
 - Menus, options, saving/loading.
 - Rendering at each shader quality level (community reports: blue screen
