@@ -176,6 +176,59 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: contact materials, callbacks and world update (Phase 5, step 7)
+- **Repo / commits:** HPL1Engine `db0ad1f`, `2cfee41`, `e666f69`, `7a5d954`,
+  `f0aa30a`, `758ec5d`, README `f7d6709`
+- **Files:** `external/newton-1.53/newtonWorld.cpp`, `CMakeLists.txt`,
+  `NewtonMaterialGraph.cpp`, `newton-4/source/ndScene.cpp`,
+  `newton-4/source/ndThreadPool.h`, layer README
+- **Problems and fixes:**
+  - **Materials were never applied** (`db0ad1f`). `NewtonBodySetMaterialGroupID`
+    only stored the group; the core picks a contact's material by shape user
+    ids, which were never set. Every contact used the default material, so
+    there was no per-material friction or bounce, and none of HPL's contact
+    callbacks ran (impact/slide/roll sounds, breaking, enemy damage, the
+    player backing off a pushed object). Contacts now look the material up
+    by the bodies' groups. Pairs with group 0 (HPL's "Default" material) get
+    their own material too, instead of all sharing one.
+  - **Callbacks on another thread** (`2cfee41`). Newton 4 ran the update on
+    its own thread. The core is now built with `D_USE_THREAD_EMULATION` and
+    one thread, so `NewtonUpdate` runs on the game thread like 1.53, and each
+    pair's begin → process… → end run back to back (HPL keeps their state in
+    statics). The emulation branch of `ParallelExecute` no longer compiled
+    and was fixed.
+  - **3 substeps** (`e666f69`): now 1 per update, as in 1.53. Callbacks had
+    run 3 times per update.
+  - **SIMD8 solver bug** (`7a5d954`): it mixed up rows of constraints with
+    different row counts in a batch. Seen: a frictionless box made another
+    box's contact frictionless, depending on order. Switched to the standard
+    solver (no loss: single thread, scalar maths).
+  - **Stale contacts / skipped callbacks** (`f0aa30a`): when the begin
+    callback returned 0 the pair kept last step's contacts (now dropped, as
+    in 1.53). Contacts of moving pairs are now recomputed every step instead
+    of being reused while bodies moved less than 1 mm / 0.25°, so callbacks
+    run every step for moving bodies, and bodies HPL teleports by setting
+    their matrix don't keep stale contacts.
+  - **Elasticity clamp** (`758ec5d`): 0.01..2 as in 1.53 (was 0..1).
+- **Verified:** headless test with HPL-style begin/process/end callbacks and
+  four material groups: callbacks run on the main thread, strictly
+  B P… E per pair, once per pair per update; impact normal speed 5.89 m/s for
+  a 1.75 m drop (positive, as HPL expects); `NewtonMaterialGetContactForce`
+  sums to 9.81 N for a 1 kg box; a bouncy pair rebounds to 1.16 m while a
+  dead pair doesn't bounce; a frictionless pair slides while a μ=0.6 pair
+  decelerates at ~0.6 g; a rejected pair falls through the floor at once.
+  All earlier step 4–6 tests still pass. With 1 substep a ±0.5 rad hinge
+  limit overshoots by up to 0.044 rad and a slider stop by 3 cm at 60 Hz
+  (was 0.009 rad / 6 mm with 3 substeps); 1.53 also stepped once per
+  update, so this should be closer, but it is a feel item for Phase 6.
+- **Known differences:** when both bodies of a pair are completely still,
+  Newton 4 skips the pair, so no callbacks fire for it (1.53 kept calling
+  until the bodies froze). HPL's uses of the callbacks need motion, so this
+  should not matter. In 1.53, `end` may also have been called for a pair
+  with no contact points; HPL's `end` ignores that case either way. A
+  process callback returning 0 does not reject the point (HPL always
+  returns 1). Not checked in-game.
+
 ### Newton 1.53 layer: joints obey HPL's limit callbacks (Phase 5, step 6)
 - **Repo / commit:** HPL1Engine `4434e4a`
 - **Files:** `external/newton-1.53/joints/NewtonHinge.cpp`, `NewtonSlider.cpp`,

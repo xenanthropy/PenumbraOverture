@@ -206,10 +206,12 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
    `NewtonBallSetConeLimits` use the cone axis it's given.
 6. ✅ Make the joint wrappers honour HPL's limit callbacks (return value,
    acceleration, min/max friction). **Highest risk for doors and levers.**
-7. Contact callbacks: run begin/process/end back to back per pair (HPL keeps
+7. ✅ Contact callbacks: run begin/process/end back to back per pair (HPL keeps
    their state in statics), keep Newton single-threaded, 1 substep instead of
    3, match 1.53's restitution clamp. Check `NewtonMaterialGetContactForce`
-   there.
+   there. Along the way: contacts now use the bodies' materials (they never
+   did, so no callbacks ran), the SIMD8 solver was swapped for the standard
+   one, and stale contacts are dropped.
 8. Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
    `HPL_DEPENDENCIES_DIR`. (The layer's `Newton.h` uses `size_t` without
    including `<stddef.h>`; add it if anything trips on it.)
