@@ -675,7 +675,7 @@ noise; the warning pointed at it.
 
 ### Black screen with anti-aliasing and bloom or motion blur
 - **Repo:** HPL1Engine
-- **Commit:** `eeaf74f` on `claude/project-thread-962twm`
+- **Commit:** `eeaf74f` on `claude/project-thread-msxp3s`
 - **Files:** sources/impl/SDLGameSetup.cpp
 - **Problem:** with anti-aliasing and Post Effects on, turning on Bloom or Motion Blur made the 3D view black, with the HUD smearing as it faded (Xenan, Linux, AMD). The retail Linux port was fine. On modern distros SDL 1.2 is sdl12-compat, which draws OpenGL games into its own framebuffer object so it can scale them, and with anti-aliasing that framebuffer is multisampled. Every post effect copies the screen with `glCopyTexSubImage2D`. sdl12-compat only patches that call for games that look it up through `SDL_GL_GetProcAddress`, and the engine calls it directly, so the copy fails on the multisampled framebuffer and the screen texture stays black. sdl12-compat already turns the scaling off for the retail `Penumbra.exe` on Windows. The retail Linux port ships its own SDL 1.2.
 - **Fix:** set `SDL12COMPAT_OPENGL_SCALING=0` before `SDL_Init`, unless the player already set it. sdl12-compat then gives the game a real multisampled window, which the copies can read. With real SDL 1.2 the variable does nothing.
