@@ -25,6 +25,17 @@ autonomously.
   owner wants to send a bug fix upstream, they will make that PR themselves,
   manually.
 
+## Repository layout and change log
+
+- **PenumbraOverture is the main repository.** HPL1Engine and OALWrapper are
+  its dependencies.
+- When a fix belongs in HPL1Engine or OALWrapper, commit it in that repo on
+  its own working branch (no PRs, as above).
+- **Every fix, in any of the three repos, gets an entry in
+  [`FIXES.md`](FIXES.md)** in this repo: which repo, commit, files, the
+  problem, the fix, and how it was verified. Update FIXES.md in the same step
+  as the fix.
+
 ## Goal
 
 Get Penumbra Overture and its engine building cleanly on modern Linux and
