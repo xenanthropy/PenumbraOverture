@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton layers: NewtonBodySetMatrix drops scale, as 1.53 did (missing boat notebook)
+- **Repo:** HPL1Engine
+- **Commit:** `607d960` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/NewtonBody.cpp, external/newton-1.53/README.md, external/newton-1.53/tests/newton153_test.cpp, external/newton-2.36/newton153_on_236.cpp
+- **Problem:** the notebook in the boat cabin was missing, so the level exit never unlocked. Its map node (`_ref_item_notebook_notebook`) carries a scale of (0.028, 0.223, 0.169), and HPL's Collada loader puts that scale into the entity's matrix. HPL passes the matrix to `NewtonBodySetMatrix`. The original 1.53 library makes the rotation orthonormal there, so the scale disappears. Both our layers kept it, so the notebook's body, and the mesh that follows it, were shrunk to a few millimetres. 2.36 also produced NaNs from it.
+- **Fix:** both layers now orthonormalise the matrix exactly as 1.53 does: front normalised, right = front × up (normalised), up = right × front. Worked out and checked by running the original 32-bit 1.53 library on scaled and skewed matrices.
+- **Feel:** none for bodies already placed with clean matrices. Bodies placed with a scale now behave as in 1.53.
+- **Verified:** for a scaled matrix, a skewed matrix and a non-orthogonal rotation, both layers give the same result as the original library to 4 decimal places. New layer check (69/69 pass on Newton 4 and 2.36; the original 1.53 passes it too). Not yet tried in game.
+
 ### Newton 2.36 core as a build option (Phase 6)
 - **Repo:** HPL1Engine
 - **Commit:** `483cab2` (core and switch), `9d13d76` (test) on `claude/project-thread-msxp3s`
