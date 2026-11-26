@@ -97,8 +97,8 @@ parent/
   `system`, and `impl/` (the concrete backends).
 - Backends in `impl/`:
   - Window / input / 2D: **SDL 1.2** (+ SDL_image, SDL_ttf).
-  - Rendering: fixed-function + extension OpenGL through **GLee**
-    (`include/GL/GLee.h`, `sources/impl/GLee.c`), shaders in **NVIDIA Cg**
+  - Rendering: fixed-function + extension OpenGL through **GLEW** (GLee was
+    replaced in Phase 3), shaders in **NVIDIA Cg**
     (`CGProgram.cpp`, `.cg` files under `assets/core/programs`). Also ATI
     fragment-shader fallback materials (`Material_Fallback01/02_BaseLight`).
   - Physics: **Newton Game Dynamics 1.x** (old, closed-source-era API:
@@ -191,4 +191,4 @@ make -k -j"$(nproc)"
 
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
 libsdl-ttf2.0-dev libopenal-dev libvorbis-dev libogg-dev libglu1-mesa-dev
-nvidia-cg-toolkit`. FLTK and ALUT are no longer needed.
+libglew-dev nvidia-cg-toolkit`. FLTK and ALUT are no longer needed.

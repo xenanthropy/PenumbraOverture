@@ -148,7 +148,35 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
-_No entries yet._
+### Replace GLee with GLEW
+- **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `a45a8c5` (includes), `8bc2418`
+  (glewInit), `eb2e44c` (extension checks), `f1646cf` (CMake),
+  `a80cdcc` (remove GLee), `73c5ab8` (GLX/WGL headers)
+- **Files:** `include/impl/LowLevelGraphicsSDL.h`, `include/impl/PBuffer.h`,
+  `include/impl/CGProgram.h`, `include/impl/SDLTexture.h`,
+  `sources/impl/LowLevelGraphicsSDL.cpp`, `sources/impl/VertexBufferVBO.cpp`,
+  `sources/impl/VertexBufferOGL.cpp`, `sources/impl/OcclusionQueryOGL.cpp`,
+  `sources/impl/SDLTexture.cpp`, `sources/graphics/Material_Fallback01/02_BaseLight.cpp`,
+  `CMakeLists.txt`; deleted `include/GL/GLee.h`, `sources/impl/GLee.c`
+  (about 36k lines).
+- **Problem:** about 70 "not declared" errors (`glBindBufferARB`,
+  `gl*FragmentShaderATI`, `glGenQueriesARB`, ...). GLee checks the
+  `__glext_h_` guard, which modern Khronos/Mesa `glext.h` no longer sets the
+  same way, so GLee skipped its own declarations. GLee is also abandoned.
+- **Fix:** include `<GL/glew.h>` instead. `GLeeInit()` becomes `glewInit()`
+  (logs the GLEW version, or GLEW's error string on failure). The 16 `GLEE_*`
+  extension checks are renamed one-to-one to `GLEW_*`. The vsync checks
+  become `GLXEW_SGI_swap_control` / `WGLEW_EXT_swap_control`. The headers
+  that use GLX/WGL types now include `glxew.h` / `wglew.h`, which GLee used to
+  pull in implicitly. CMake finds and links `GLEW::GLEW` (needs
+  `libglew-dev`).
+- **Verified:** HPL1Engine now compiles with **zero errors** on GCC 13
+  (x86_64), and the game links `libHPL.a`. The only remaining link errors
+  come from the 32-bit prebuilt `libNewton.a` (and the 32-bit
+  `libangelscript.a`, if that is used). With a scratch 64-bit AngelScript
+  build, Newton is the only thing missing. Not run yet: the extension
+  detection still needs checking against the retail game's log at runtime.
+
 
 ## Gameplay and engine bugs
 

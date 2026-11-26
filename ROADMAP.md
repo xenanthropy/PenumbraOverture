@@ -88,7 +88,7 @@ Make CMake find dependencies the modern way instead of relying on the
 - **Verify:** handled properly when we reach Windows (Phase 7); for now just
   remove the dead references.
 
-## Phase 3 — Replace GLee (HPL1Engine)
+## Phase 3 — Replace GLee (HPL1Engine) ✅ done 2026-11-26
 
 **Decision (made 2026-11-26): GLEW.**
 - *GLEW*: closest drop-in for GLee. Same function names (`glBindBufferARB`,
