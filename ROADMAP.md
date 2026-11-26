@@ -196,27 +196,34 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
    scalar vector math on GCC/Clang, optimised even in Debug, links Threads.
    Not linked into HPL yet (`EXCLUDE_FROM_ALL`).
 3. ✅ The 3 GCC fixes. The library builds on GCC 13 x86_64.
-4. Define the 12 missing functions HPL1 calls: `NewtonCollisionCollide`
-   (character controller, areas, weapons; via `ndContactSolver`),
-   `NewtonHinge/Slider/Corkscrew/BallGetJointForce`,
-   `NewtonBallGetJointAngle/Omega`, `NewtonMaterialGetContactForce`,
-   `NewtonBodySetFreezeTreshold`, `NewtonSetSolverModel`,
-   `NewtonSetFrictionModel`, `NewtonMaterialSetContinuousCollisionMode`.
-5. Fill the 8 stubs: `NewtonAddBodyImpulse`, `NewtonWorldFreezeBody`,
-   `NewtonBallSetConeLimits`, the three `Calculate Stop` functions, body
-   continuous-collision get/set.
+4. ✅ Define the 12 missing functions HPL1 calls (`NewtonCollisionCollide`,
+   joint force/angle/omega readouts, contact force, per-body freeze
+   thresholds, solver/friction model, material continuous collision).
+   Along the way: fixed a matrix-copy memory overrun in the core on GCC/Clang.
+5. Fill the stubs: `NewtonAddBodyImpulse`, `NewtonWorldFreezeBody`, the three
+   `Calculate Stop` functions, body continuous-collision get/set. Also, found
+   during step 4:
+   - `NewtonBodyGetSleepingState` returns 1 for *sleeping*; 1.53 (and HPL's
+     `GetEnabled`) mean 1 = *active*. Inverted.
+   - `NewtonBallSetConeLimits` isn't a stub (a working version exists further
+     down the file), but it ignores the cone pin HPL passes.
 6. Make the joint wrappers honour HPL's limit callbacks (return value,
    acceleration, min/max friction). **Highest risk for doors and levers.**
 7. Contact callbacks: run begin/process/end back to back per pair (HPL keeps
    their state in statics), keep Newton single-threaded, 1 substep instead of
-   3, match 1.53's restitution clamp.
+   3, match 1.53's restitution clamp. Check `NewtonMaterialGetContactForce`
+   there.
 8. Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
-   `HPL_DEPENDENCIES_DIR`.
+   `HPL_DEPENDENCIES_DIR`. (The layer's `Newton.h` uses `size_t` without
+   including `<stddef.h>`; add it if anything trips on it.)
 9. A small headless physics test (falling box, hinge limit, impulse Δv,
    shape collision, callback order).
 
 After assets: in-game checks (Phase 6) and a side-by-side with the retail
-Steam build.
+Steam build. Feel knobs to watch: solver iterations for "exact" mode
+(`HPL1_SOLVER_ITERATIONS_EXACT`, 16), and how quickly bodies freeze once
+under their threshold (Newton 4 freezes them straight away; 1.53 may have
+waited a few frames).
 
 ### Plan if we go with B
 

@@ -176,6 +176,68 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: matrix copies overran by 8 floats on GCC/Clang
+- **Repo / commit:** HPL1Engine `d5282e1`
+- **Files:** `external/newton-1.53/newton-4/source/ndMatrix.h`,
+  `external/newton-1.53/NewtonBody.cpp`, `external/newton-1.53/NewtonCollision.cpp`
+- **Problem:** memory corruption. Under the Itanium C++ ABI (GCC, Clang)
+  `ndMatrix` is 96 bytes with `m_front` at offset 16, because it and its
+  `ndVector` members share the empty base class `ndClassAlloc`; MSVC (which
+  upstream is tested on) makes it 64 bytes. Three places copied
+  `sizeof(ndMatrix)/sizeof(float)` = 24 floats instead of 16:
+  building a matrix from a float array (used by almost every API call that
+  takes a matrix), `NewtonBodyGetMatrix` and
+  `NewtonConvexHullModifierGetMatrix`. Each wrote 32 bytes past its buffer.
+  glibc's `_FORTIFY_SOURCE` (on by default on Ubuntu) aborted with "buffer
+  overflow detected" / "stack smashing detected".
+- **Fix:** copy exactly 16 floats. Checked the rest of the layer and core for
+  the same pattern; only these three.
+- **Verified:** a guard-word test around `NewtonBodyGetMatrix` shows no
+  overrun; the step-4 test program runs cleanly with fortify enabled.
+
+### Newton 1.53 layer: the 12 missing functions (Phase 5, step 4)
+- **Repo / commits:** HPL1Engine `997f6cf` (per-body freeze thresholds),
+  `605b994` (the functions)
+- **Files:** new `external/newton-1.53/NewtonHPL1Engine.cpp`; `Newton.h`
+  (declarations block at the end); `NewtonBody.h`, `NewtonBody.cpp`;
+  `newton-4/source/ndBodyDynamic.h` (one method private → protected)
+- **Problem:** 12 functions HPL1Engine calls were declared by the layer but
+  never defined (their old code is inside `#if 0`), so the engine couldn't
+  link. Four weren't even declared any more.
+- **Fix:** each one follows what real 1.53 did, using the Newton 2.36 source
+  (ScummVM) where 1.53's isn't available:
+  - `NewtonCollisionCollide`: shape-vs-shape contacts via Newton 4's
+    `ndContactSolver`, the same way Newton 4 does its own shape queries.
+    Normal points from B to A and depth is positive, which is what HPL's
+    `CheckShapeCollision` push-out expects (character controller, ladders,
+    areas, weapon hits).
+  - `NewtonBall/Hinge/Slider/CorkscrewGetJointForce`: the net linear force
+    the joint applies to the child body, excluding the slider/corkscrew
+    pin direction, which matches 1.53's sum of its base-row forces. HPL
+    compares its length to each joint's break force.
+  - `NewtonBallGetJointAngle/Omega`: as 2.36 (relative Euler angles; relative
+    angular velocity in the joint frame).
+  - `NewtonMaterialGetContactForce`: normal + friction forces of the contact
+    point, as 1.53's own code did.
+  - `NewtonBodySetFreezeTreshold`: per-body speed²/omega² limits, applied by a
+    small body subclass in Newton 4's sleep test. HPL's default (0.01, i.e.
+    0.1 m/s) is much looser than Newton 4's own (0.032 m/s), so without this
+    objects would keep creeping where 1.53 stopped them.
+  - `NewtonSetSolverModel`: exact → 16 solver iterations, adaptive → 8,
+    n passes → n. These two numbers are tuning knobs for feel testing.
+  - `NewtonSetFrictionModel`, `NewtonMaterialSetContinuousCollisionMode`:
+    no Newton 4 equivalent; no-ops.
+- **Verified:** `newton153` builds on GCC 13; every Newton function HPL calls
+  is now defined in the library (symbol check), and HPL's 11 Newton files
+  compile against the layer's `Newton.h`. A scratch test program (not
+  committed yet; it becomes step 9) passes: sphere/box, box/box and
+  sphere/level-mesh collisions give the expected normals (+Y) and depths
+  (0.200 / 0.101 / 0.150); a 1 kg body hanging from a hinge, a ball joint and
+  a slider reports 9.81 N on each; a resting ball joint reports ~0 angle and
+  omega; a box sliding at 6 cm/s freezes with HPL's threshold and keeps
+  sliding without it. **Not verified:** contact force (needs the contact
+  callbacks, step 7), and anything in-game.
+
 ### Newton 1.53 layer vendored and building (Phase 5, steps 1–3)
 - **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `42a464d` (vendor,
   unmodified), `34c2977` (CMake target), `c608a72` (GCC fixes)
