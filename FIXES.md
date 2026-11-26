@@ -212,6 +212,14 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: 45 degree spin cap per step (Phase 6)
+- **Repo:** HPL1Engine
+- **Commit:** `2d8565d` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newton-4/source/ndBodyKinematic.cpp, external/newton-1.53/README.md, external/newton-1.53/tests/newton153_test.cpp
+- **Problem:** grabbing the boat paraffin lamp in level 1 froze it, then it flew off. While an object is held, `cPlayerState_Grab` adds a damping torque of `-omega * 0.9 * mass` every frame. The lamp's inertia about its long axis is tiny (about 0.002 per kg), so that torque overshoots: each step the spin reverses and grows about 6 times, reaching over 100 rad/s in 5 frames. Newton 2.x (`dgBody::IntegrateVelocity`, and very likely 1.53) caps the rotation per step at 45 degrees; Newton 4 only asserts it in debug builds. Newton 4's gyroscopic term was ruled out: removing it didn't stop the blow-up.
+- **Fix:** before integrating, the layer shrinks a body's angular velocity by 0.8 until one step turns it by no more than 45 degrees, as 2.x does. Feel: only bodies spinning faster than about 47 rad/s at 60 Hz are touched, so normal objects are unchanged. A held lamp may still buzz around its vertical axis, as it would under 2.x; to compare with retail.
+- **Verified:** a headless copy of the lamp (its two bodies, ball joints and limits from Xenan's .dae/.ent, plus the grab's force, torque and damping) blew up without the cap and with it follows the hand and settles after release. Two new checks in the layer test (61/61 pass); the spin check fails without the cap. Not yet tried in game. Separately found, not changed yet: Newton 4 returns inertia about the shape origin, not the centre of mass as 2.x did, so off-centre bodies turn more sluggishly than the original (to fix after comparing with retail).
+
 ### Newton 1.53 layer: world box and NaN guard (Phase 6)
 - **Repo:** HPL1Engine
 - **Commit:** `3d1f5ee` on `claude/project-thread-msxp3s`
