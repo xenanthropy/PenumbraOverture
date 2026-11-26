@@ -215,8 +215,12 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
 8. ✅ Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
    `HPL_DEPENDENCIES_DIR`. (The layer's `Newton.h` uses `size_t` without
    including `<stddef.h>`; add it if anything trips on it.)
-9. A small headless physics test (falling box, hinge limit, impulse Δv,
-   shape collision, callback order).
+9. ✅ A small headless physics test (falling box, hinge limit, impulse Δv,
+   shape collision, callback order): `newton153_test`, 53 checks. See
+   CLAUDE.md, "Physics test".
+
+**Phase 5 is complete.** The game builds and links with the layer; nothing
+is verified in-game yet.
 
 After assets: in-game checks (Phase 6) and a side-by-side with the retail
 Steam build. Feel knobs to watch: solver iterations for "exact" mode

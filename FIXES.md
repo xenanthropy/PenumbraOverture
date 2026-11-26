@@ -176,6 +176,27 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Headless Newton layer test (Phase 5, step 9)
+- **Repo / commit:** HPL1Engine `2e2a3d8`
+- **Files:** `external/newton-1.53/tests/newton153_test.cpp`,
+  `external/newton-1.53/CMakeLists.txt`, layer README; PenumbraOverture
+  `CLAUDE.md`, `ROADMAP.md`
+- **Change:** the scratch tests used while completing the layer (steps 4–8)
+  are now one committed program, `newton153_test` (target not built by
+  default). 53 checks: buffer overruns, `NewtonCollisionCollide` normals and
+  depths, joint force/angle/position readouts and the stop helpers,
+  sleeping state, freeze thresholds, impulses, freeze/unfreeze, CCD flag,
+  ball cone limits, HPL1-style hinge/slider/corkscrew limit and friction
+  callbacks, materials (per-pair elasticity and friction) with HPL1-style
+  begin/process/end callbacks (thread, order, once per update, impact speed,
+  contact force, rejected pairs), and joint destroy/collision/stiffness.
+  Run instructions are in CLAUDE.md.
+- **Verified:** built from a fresh build folder with `make newton153_test`
+  (no warnings with `-Wall -Wextra`) and run: 53 of 53 pass, exit code 0.
+  The full game still builds. The checks were not each re-proven to fail on
+  the old code inside this one program; each was written against a bug or
+  behaviour found in steps 4–8 and passed only after its fix there.
+
 ### Newton 1.53 layer linked into HPL; prebuilt libNewton.a dropped (Phase 5, step 8)
 - **Repo / commits:** HPL1Engine `7714694`, `7c968af`, `254d709`
 - **Files:** `CMakeLists.txt`, `external/newton-1.53/NewtonHPL1Engine.cpp`,

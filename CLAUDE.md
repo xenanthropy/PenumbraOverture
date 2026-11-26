@@ -209,6 +209,22 @@ make -j"$(nproc)"
 
 The game binary is `overture.bin` in the build folder.
 
+### Physics test
+
+A headless test checks the Newton 1.53 layer the way the engine uses it
+(53 checks: collisions, joints and their limit callbacks, sleeping,
+impulses, materials and contact callbacks). It draws nothing, so it gives
+the same result on any machine; it doesn't replace playing the game. It is
+not part of the normal build. From the build folder:
+
+```sh
+make newton153_test && ./HPL1Engine/external/newton-1.53/newton153_test
+```
+
+Exit code 0 means every check passed. Run it after any change to
+`HPL1Engine/external/newton-1.53`. The source is
+`HPL1Engine/external/newton-1.53/tests/newton153_test.cpp`.
+
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
 libsdl-ttf2.0-dev libopenal-dev libvorbis-dev libogg-dev libglu1-mesa-dev
 libglew-dev nvidia-cg-toolkit`. FLTK and ALUT are no longer needed.
