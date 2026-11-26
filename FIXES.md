@@ -212,6 +212,14 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: level mesh faces a body can leave sideways are skipped (Phase 6)
+- **Repo:** HPL1Engine
+- **Commit:** `2a91d6c` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newton-4/source/ndShapeConvexPolygon.cpp, external/newton-1.53/README.md, external/newton-1.53/tests/newton153_test.cpp
+- **Problem:** in the boat level the paraffin lamp's chain rested pinned about 30 degrees off vertical and could only slide a little around that rim. The rod's hook sits 6.6 cm inside the ceiling beam it hangs from (`noshadow_bjalkar` in level00_01_boat_cabin.dae). Newton 4 always pushes a penetrating body out along a mesh face's normal, so the beam's underside pushed the rod down off-centre and swung it to its 30 degree cone limit. Newton 2.x treats a face as a thin plate and pushes out the shortest way (EPA); for the beam's underside that way is sideways (4.9 cm across its edge, less than the 6.6 cm depth), and then it makes no contact.
+- **Fix:** skip a mesh face when the penetrating body could leave it sideways, across one of its edges, in less than its depth along the normal. Feel: shallow resting contacts never meet that condition unless a body overhangs a face's edge by less than its few mm of penetration, where a neighbouring face carries it, as in 2.x.
+- **Verified:** ScummVM's Newton 2.36 was built standalone (scratch only, not committed) and run on the same scene (the lamp's two bodies and joints plus the beam's faces from the map): it leaves the rod hanging straight, while our layer pinned it at 30 degrees; with the fix our layer hangs straight and swings as with no beam. New level mesh section in the layer test (66/66 pass): resting, stacking three boxes and sliding across tile edges on a tiled mesh floor give identical numbers with and without the change, and the hooked bar went from 30.6 to 0 degrees. Not yet tried in game.
+
 ### Grab: spin brake limited so small props don't buzz (Phase 6)
 - **Repo:** PenumbraOverture
 - **Commit:** `bb7e43e` on `claude/project-thread-msxp3s`
