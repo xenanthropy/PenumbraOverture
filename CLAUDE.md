@@ -10,7 +10,7 @@ autonomously.
 
 - Explain what you found and what you propose **before** changing code.
   Wait for a go-ahead on anything non-trivial.
-- Prefer small, focused changes (one concern per commit / PR) so each step can
+- Prefer small, focused changes (one concern per commit) so each step can
   be reviewed and understood.
 - When something is a judgment call (e.g. which replacement library to use),
   lay out the options with a recommendation and let the owner decide.
@@ -35,6 +35,8 @@ autonomously.
   [`FIXES.md`](FIXES.md)** in this repo: which repo, commit, files, the
   problem, the fix, and how it was verified. Update FIXES.md in the same step
   as the fix.
+- Background, the baseline build errors, known runtime bugs and the
+  dependency situation are catalogued in [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
 ## Goal
 
@@ -124,7 +126,8 @@ SDL_image, OpenAL, Vorbis, GLU, FLTK 1.3, ALUT, Theora, nvidia-cg-toolkit).
      Options: bundle an open-source Newton 1.53-compatible core (ScummVM's
      `engines/hpl1` port did exactly this), or port to a newer physics lib.
   2. **AngelScript** too old for any packaged version; `angelscript.h`
-     missing. Either vendor the matching old version (needs 64-bit
+     missing. The original 2.7.1b source is on SourceForge SVN
+     (`branches/2.7.1`) and builds with a one-line fix (see KNOWN_ISSUES.md). Either vendor the matching old version (needs 64-bit
      calling-convention support) or port the script bindings to a modern
      2.3x release (ScummVM again is a working reference using 2.35).
   3. **GLee vs. modern Mesa headers**: `glBindBufferARB`, `gl*FragmentShaderATI`,
