@@ -509,6 +509,13 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Gameplay and engine bugs
 
+### Choppy streamed music in the main menu
+- **Repos / commits:** PenumbraOverture `cddb660`, OALWrapper `d6498f3`, on `claude/project-thread-msxp3s`
+- **Files:** PenumbraOverture Init.cpp; OALWrapper sources/OAL_Device.cpp
+- **Problem:** menu music (and the rain loop) cut in and out rapidly, a phaser-like stutter. Retail has it too (Xenan, also under Proton). Penumbra asked for 64-byte stream buffers, which OALWrapper raises to its 4 KB minimum, with 4 buffers: about 93 ms of 44.1 kHz stereo. The stream thread refills every 100 ms (`StreamUpdateFreq` 10), so the source ran dry on almost every refill. Lower-rate streams (22 kHz mono) have 4x the slack, which probably explains why it's mostly noticed in the menu (not checked against the game data).
+- **Fix:** Penumbra's default stream buffer is 16 KB (4 x 16 KB, about 370 ms of 44.1 kHz stereo). OALWrapper also enlarges the buffers so the queue holds at least twice the refill interval of 48 kHz 16-bit stereo, whatever the settings. Only buffering changes; the audio itself doesn't.
+- **Verified:** a test program streams a 44.1 kHz stereo Ogg through OALWrapper with OpenAL Soft and counts underruns over 4 s. Before: 34 with the game's settings. After: 0 with the game's old settings, with 16 KB buffers, and with a 5 Hz refill. Not yet heard on Xenan's machine.
+
 ### Our build shared the retail game's settings, saves and logs
 - **Repo:** PenumbraOverture
 - **Commit:** `bb8268d` on `claude/project-thread-msxp3s`
