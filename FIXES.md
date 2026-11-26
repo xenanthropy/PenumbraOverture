@@ -45,7 +45,7 @@ ones (Phase 3), and all PenumbraOverture files compile.
 - **Files:** sources/impl/SDLTexture.cpp
 - **Problem:** `(int)pow((float)2,(int)mlSizeLevel)` is an ambiguous overload on MSVC (reported on the Frictional forum).
 - **Fix:** Replaced with `1 << mlSizeLevel`. This gives the same value for the texture size divisor, without floating point.
-- **Verified:** Compiles with GCC 13.3 (Ubuntu 24.04, x86_64): the error no longer appears in the HPL1Engine build. Not yet run (needs the rest of the roadmap).
+- **Verified:** Compiles with GCC 13.3 (GCC never flagged it). The MSVC side is not verified yet (Phase 7).
 
 ### cGfxBufferCompare must be const
 - **Repo:** HPL1Engine
