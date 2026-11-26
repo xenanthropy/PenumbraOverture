@@ -3267,6 +3267,15 @@ void cMainMenu::CreateWidgets()
 	AddWidgetToState(eMainMenuState_OptionsKeySetupAction,hplNew( cMainMenuWidget_KeyButton,(mpInit,vPos,kTranslate("MainMenu","LookMode:"),
 		18,eFontAlign_Left,pTempTextWidget,"LookMode")) ); 
 
+	// PenumbraRevival: the retail language files have no text for this one.
+	vPos.y += 23;
+	pTempTextWidget = hplNew( cMainMenuWidget_Text,(mpInit,vPos+cVector3f(fKeyTextXAdd,0,0),_W(""),18,eFontAlign_Left) );
+	AddWidgetToState(eMainMenuState_OptionsKeySetupAction,pTempTextWidget); 
+	tWString sRotateText = kTranslate("MainMenu","Rotate Object:");
+	if(sRotateText == _W("")) sRotateText = _W("Rotate Object:");
+	AddWidgetToState(eMainMenuState_OptionsKeySetupAction,hplNew( cMainMenuWidget_KeyButton,(mpInit,vPos,sRotateText,
+		18,eFontAlign_Left,pTempTextWidget,"RotateObject")) ); 
+
 
 	///////////////////////////////////
 	// Options Key Setup Misc

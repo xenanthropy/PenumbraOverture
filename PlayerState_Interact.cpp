@@ -52,6 +52,33 @@ static cVector3f LimitGrabBrake(iPhysicsBody *apBody, const cVector3f &avTorque,
 	return cMath::MatrixMul(mtxRot, vLocalTorque);
 }
 
+// PenumbraRevival: the rotation that a (pure rotation) matrix makes, as
+// axis * angle in radians. Used by the held-body rotation below.
+static cVector3f RotationToAxisAngle(const cMatrixf &aM)
+{
+	float fCos = (aM.m[0][0] + aM.m[1][1] + aM.m[2][2] - 1.0f) * 0.5f;
+	if(fCos > 1.0f) fCos = 1.0f;
+	if(fCos < -1.0f) fCos = -1.0f;
+	float fAngle = acos(fCos);
+	if(fAngle < 0.0001f) return cVector3f(0,0,0);
+
+	cVector3f vAxis(aM.m[2][1] - aM.m[1][2],
+					aM.m[0][2] - aM.m[2][0],
+					aM.m[1][0] - aM.m[0][1]);
+	float fLength = vAxis.Length();
+	if(fLength < 0.001f)
+	{
+		// Close to half a turn: the axis is the longest column of M + I.
+		int lBest = 0;
+		for(int i=1; i<3; ++i) if(aM.m[i][i] > aM.m[lBest][lBest]) lBest = i;
+		vAxis = cVector3f(aM.m[0][lBest], aM.m[1][lBest], aM.m[2][lBest]);
+		vAxis.v[lBest] += 1.0f;
+		fLength = vAxis.Length();
+		if(fLength < 0.0001f) return cVector3f(0,0,0);
+	}
+	return (vAxis / fLength) * fAngle;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // GRAB STATE
 //////////////////////////////////////////////////////////////////////////
@@ -65,6 +92,8 @@ cPlayerState_Grab::cPlayerState_Grab(cInit *apInit,cPlayer *apPlayer) : iPlayerS
 	//Init controllers
 	mGrabPid.SetErrorNum(10);
 	mRotatePid.SetErrorNum(10);
+	mRotationHoldPid.SetErrorNum(10);
+	mbRotationHold = false;
 
 	
 	//Get variables
@@ -199,6 +228,12 @@ void cPlayerState_Grab::OnUpdate(float afTimeStep)
 
 	////////////////////////////
 	//The rotation
+	if(mbRotationHold)
+	{
+		UpdateRotationHold(afTimeStep);
+		return;
+	}
+
 	cVector3f vOmega = mpPushBody->GetAngularVelocity();
 	
 	//Set speed to 0
@@ -337,6 +372,17 @@ void cPlayerState_Grab::OnStartExamine()
 bool cPlayerState_Grab::OnAddYaw(float afVal)
 { 
 	afVal *= mfSpeedMul*0.75f;
+
+	// PenumbraRevival: with the rotate key held, the mouse turns the held
+	// body instead of the camera (as in Amnesia).
+	if(mpInit->mpGame->GetInput()->IsTriggerd("RotateObject"))
+	{
+		if(mbRotationHold==false) StartRotationHold();
+		m_mtxBodyRotation = cMath::MatrixMul(cMath::MatrixRotateY(afVal * 1.5f * mpPlayer->GetLookSpeed()),
+											 m_mtxBodyRotation);
+		return false;
+	}
+
 	if(mbMoveHand)
 	{
 		if(mpPlayer->AddCrossHairPos(cVector2f(afVal * 800.0f,0)))
@@ -366,6 +412,16 @@ bool cPlayerState_Grab::OnAddPitch(float afVal)
 	if(mpInit->mpButtonHandler->GetInvertMouseY()) fInvert = -1;
 
 	afVal *= mfSpeedMul*0.75f;
+
+	// PenumbraRevival: rotate the held body, see OnAddYaw.
+	if(mpInit->mpGame->GetInput()->IsTriggerd("RotateObject"))
+	{
+		if(mbRotationHold==false) StartRotationHold();
+		m_mtxBodyRotation = cMath::MatrixMul(cMath::MatrixRotateX(afVal * fInvert * 1.5f * mpPlayer->GetLookSpeed()),
+											 m_mtxBodyRotation);
+		return false;
+	}
+
 	if(mbMoveHand)
 	{
 		if(mpPlayer->AddCrossHairPos(cVector2f(0,afVal * 600.0f)))
@@ -423,6 +479,7 @@ void cPlayerState_Grab::EnterState(iPlayerState* apPrevState)
 
 	mbPickAtPoint = mpPlayer->mbPickAtPoint;
 	mbRotateWithPlayer = mpPlayer->mbRotateWithPlayer;
+	mbRotationHold = false;
 
 	if(mPrevState == ePlayerState_InteractMode) 
 		mbMoveHand = true;
@@ -513,6 +570,62 @@ void cPlayerState_Grab::LeaveState(iPlayerState* apNextState)
 
 
 	mpPlayer->SetSpeedMul(1.0f);
+}
+
+//-----------------------------------------------------------------------
+
+// PenumbraRevival: start holding the body's orientation, the first time the
+// player uses the rotate key during this grab. Until then the grab behaves
+// exactly as the original. A body grabbed at a point (mbPickAtPoint) hangs
+// from that point under gravity, which is what flips chairs upside down;
+// from here on it is carried like the other bodies instead: gravity off and
+// pulled at its centre of mass, as Amnesia does.
+void cPlayerState_Grab::StartRotationHold()
+{
+	mbRotationHold = true;
+
+	float fYaw = mpPlayer->GetCamera()->GetYaw();
+	cMatrixf mtxInvYaw = cMath::MatrixRotateY(-fYaw);
+	m_mtxBodyRotation = cMath::MatrixMul(mtxInvYaw, mpPushBody->GetLocalMatrix().GetRotation());
+
+	if(mbPickAtPoint)
+	{
+		cVector3f vPickPoint = cMath::MatrixMul(mpPushBody->GetLocalMatrix(), mvRelPickPoint);
+		mbPickAtPoint = false;
+		mpPushBody->SetGravity(false);
+		mvRelPickPoint = vPickPoint - cMath::MatrixMul(mpPushBody->GetWorldMatrix(),
+													   mpPushBody->GetMassCentre());
+		mfStartYaw = fYaw;
+		mGrabPid.Reset();
+	}
+
+	mRotationHoldPid.Reset();
+}
+
+//-----------------------------------------------------------------------
+
+// PenumbraRevival: turn the body towards its wanted orientation, the way
+// Amnesia's grab does: a wanted spin from the angle error, capped at
+// 6 rad/s, and a torque (scaled by the body's inertia) that closes the gap
+// between that spin and the real one. Each step removes 2/3 of the spin
+// error, so even thin props with little inertia never overshoot.
+void cPlayerState_Grab::UpdateRotationHold(float afTimeStep)
+{
+	cMatrixf mtxGoal = cMath::MatrixMul(cMath::MatrixRotateY(mpPlayer->GetCamera()->GetYaw()),
+										m_mtxBodyRotation);
+	cMatrixf mtxBody = mpPushBody->GetLocalMatrix().GetRotation();
+	cVector3f vError = RotationToAxisAngle(cMath::MatrixMul(mtxGoal, mtxBody.GetTranspose()));
+
+	cVector3f vWantedSpeed = vError * 100.0f;
+	float fSpeed = vWantedSpeed.Length();
+	if(fSpeed > 6.0f) vWantedSpeed = (vWantedSpeed / fSpeed) * 6.0f;
+
+	mRotationHoldPid.p = 40.0f;
+	mRotationHoldPid.i = 0.0f;
+	mRotationHoldPid.d = 0.0f;
+	cVector3f vAcc = mRotationHoldPid.Output(vWantedSpeed - mpPushBody->GetAngularVelocity(), afTimeStep);
+
+	mpPushBody->AddTorque(cMath::MatrixMul(mpPushBody->GetInertiaMatrix(), vAcc));
 }
 
 //-----------------------------------------------------------------------

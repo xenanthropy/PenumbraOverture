@@ -67,6 +67,9 @@ public:
 
 	static float mfMassDiv;
 private:
+	void StartRotationHold();
+	void UpdateRotationHold(float afTimeStep);
+
 	cVector3f mvRelPickPoint;
 	iPhysicsBody *mpPushBody;
 
@@ -112,6 +115,13 @@ private:
 
 	float mfMinThrowImpulse;
 	float mfMaxThrowImpulse;
+
+	// PenumbraRevival: Amnesia-style rotation of the held body. Once the
+	// player holds the rotate key, the body keeps the orientation in
+	// m_mtxBodyRotation (relative to the camera's yaw) until it is let go.
+	bool mbRotationHold;
+	cMatrixf m_mtxBodyRotation;
+	cPidControllerVec3 mRotationHoldPid;
 
 	iFontData *mpFont;
 };

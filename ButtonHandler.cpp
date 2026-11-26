@@ -58,6 +58,8 @@ static cButtonHandlerAction gvDefaultActions[] = {
 
 {"InteractMode","Keyboard",eKey_r,true},
 {"LookMode","MouseButton",eMButton_Middle,true},
+// PenumbraRevival: hold to rotate a held object with the mouse (as in Amnesia).
+{"RotateObject","Keyboard",eKey_v,true},
 
 {"Holster","Keyboard",eKey_x,true},
 
