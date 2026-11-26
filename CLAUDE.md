@@ -87,9 +87,8 @@ parent/
 - `*HaptX*` files are support for the old Novint Falcon haptic device; the
   engine side is stubbed / optional.
 - Last real upstream change: 2010 (Frictional Games open-source release).
-- `CMakeLists.txt` hard-codes link names: `HPL OALWrapper Newton angelscript
-  fltk GL GLU Cg CgGL ogg vorbis vorbisfile openal alut SDL SDL_ttf SDL_image`,
-  and looks for libs in `../dependencies/lib/linux`.
+- `CMakeLists.txt` links only `HPL` (since Phase 2); the engine target brings
+  in everything else.
 
 ### HPL1Engine (engine, built as a static lib `HPL`)
 
@@ -109,16 +108,16 @@ parent/
     operator behaviours). Modern AngelScript (2.3x) removed these.
   - Sound: OpenAL via OALWrapper.
   - Video: Theora (`VideoStreamTheora.cpp`, excluded from the CMake build).
-  - Message boxes: **FLTK** (`fl_alert` in `LowLevelSystemSDL.cpp`, the only use).
+  - Message boxes: FLTK was removed in Phase 2; non-Windows prints to stderr.
   - XML: bundled TinyXML. Collada + `.msh` mesh loaders.
 - Extras: `assets/` (engine core shaders, textures, fonts), `tests/`,
   `tools/` (map editor, model viewer, particle editor ...), not part of the
   CMake build.
 - Last real code change: 2014 ("Updated code for new OALWrapper");
   2017 commits are whitespace-only.
-- The engine `CMakeLists.txt` declares Newton / angelscript / SDLmain as
-  IMPORTED static libs from `../dependencies/lib/linux/` and does not link
-  anything itself; the game target does all linking.
+- Since Phase 2 the `HPL` target finds and links its own dependencies
+  (`find_package` + `cmake/FindCg.cmake`). Newton and AngelScript are still
+  IMPORTED from `HPL_DEPENDENCIES_DIR` until Phases 4/5.
 
 ### OALWrapper (audio, static lib)
 
@@ -179,9 +178,17 @@ keeping in mind it targets ScummVM's own platform layer, not SDL directly.
 
 ## Building (current, expected to fail)
 
+Use a build folder that is **not** inside any of the three repos. Point
+`HPL_DEPENDENCIES_DIR` at a folder containing `include/angelscript.h`,
+`include/Newton.h` and `lib/linux/lib{angelscript,Newton}.a` (temporary,
+until Phases 4 and 5 build these from source).
+
 ```sh
-# from the parent folder that contains all three repos
 mkdir build && cd build
-cmake ../PenumbraOverture
+cmake /path/to/PenumbraOverture -DHPL_DEPENDENCIES_DIR=/path/to/dependencies
 make -k -j"$(nproc)"
 ```
+
+System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
+libsdl-ttf2.0-dev libopenal-dev libvorbis-dev libogg-dev libglu1-mesa-dev
+nvidia-cg-toolkit`. FLTK and ALUT are no longer needed.

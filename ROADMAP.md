@@ -37,7 +37,7 @@ means later steps show only real problems in their build output.
   fixes for 1.1, 1.3 and 1.4, so we can compare.
 - **Verify:** each listed error disappears from the build log, and no new ones appear.
 
-## Phase 2 — Build system foundations (all three repos)
+## Phase 2 — Build system foundations (all three repos) ✅ done 2026-11-26
 
 Make CMake find dependencies the modern way instead of relying on the
 `../dependencies` folder of prebuilt binaries.

@@ -24,7 +24,57 @@ Add new entries at the top of the relevant section, one per fix:
 
 ## Build system
 
-_No entries yet._
+ROADMAP Phase 2.
+
+### Raise CMake minimums to 3.16
+- **Repo / commit:** OALWrapper `bd2100c`, HPL1Engine `83f1d15`, PenumbraOverture `9b003eb` on `claude/project-thread-msxp3s`
+- **Files:** CMakeLists.txt in each repo
+- **Problem:** `cmake_minimum_required(2.6/2.8)` gives deprecation warnings on CMake 3.x and is rejected outright by CMake 4.x.
+- **Fix:** Raised to 3.16. HPL1Engine and the game also pin C++11 (`CMAKE_CXX_STANDARD 11`) instead of using the compiler's default (gnu++17 on GCC 13).
+- **Verified:** Configures with CMake 3.28 with no deprecation warnings. Build gives the same 70 GLee errors as before Phase 2 and nothing new; all 59 game files compile as C++11. No files are written into the sibling repos. Not linked or run yet.
+
+### Add FindCg.cmake
+- **Repo / commit:** HPL1Engine `77c7668` on `claude/project-thread-msxp3s`
+- **Files:** cmake/FindCg.cmake
+- **Problem:** Cg has no standard CMake find module, so it was hard-coded by name in the link list.
+- **Fix:** New find module that locates `Cg/cg.h`, `Cg` and `CgGL` (Linux packages, the NVIDIA toolkit on Windows, the macOS framework) and provides a `Cg::Cg` target.
+- **Verified:** Configures with CMake 3.28 with no deprecation warnings. Build gives the same 70 GLee errors as before Phase 2 and nothing new; all 59 game files compile as C++11. No files are written into the sibling repos. Not linked or run yet.
+
+### HPL target finds and links its own dependencies
+- **Repo / commit:** HPL1Engine `3b01ef3` on `claude/project-thread-msxp3s`
+- **Files:** CMakeLists.txt
+- **Problem:** The `HPL` library linked nothing itself; the game hard-coded ~17 library names on its behalf and pointed at `../dependencies` for headers and libs.
+- **Fix:** `find_package` for OpenGL, SDL, SDL_image, SDL_ttf and Cg; includes and libraries are `PUBLIC` on the `HPL` target. Unused `alut`, and `ogg`/`vorbis` (OALWrapper already links those), are dropped. AngelScript and Newton still come from the prebuilt bundle, now found through the `HPL_DEPENDENCIES_DIR` cache option (default `../dependencies`) until Phases 4 and 5.
+- **Verified:** Configures with CMake 3.28 with no deprecation warnings. Build gives the same 70 GLee errors as before Phase 2 and nothing new; all 59 game files compile as C++11. No files are written into the sibling repos. Not linked or run yet.
+
+### Build output written into sibling repos
+- **Repo / commit:** PenumbraOverture `7c9bd45` on `claude/project-thread-msxp3s`
+- **Files:** CMakeLists.txt
+- **Problem:** `add_subdirectory(../OALWrapper ../OALWrapper)` put the binary dirs next to the build dir. With the build dir in the same parent folder, objects, Makefiles and `libHPL.a` landed inside the HPL1Engine and OALWrapper source trees.
+- **Fix:** Binary dirs are now `${CMAKE_BINARY_DIR}/OALWrapper` and `${CMAKE_BINARY_DIR}/HPL1Engine`.
+- **Verified:** Configures with CMake 3.28 with no deprecation warnings. Build gives the same 70 GLee errors as before Phase 2 and nothing new; all 59 game files compile as C++11. No files are written into the sibling repos. Not linked or run yet.
+
+### Game links only to HPL
+- **Repo / commit:** PenumbraOverture `ce569b0` on `claude/project-thread-msxp3s`
+- **Files:** CMakeLists.txt
+- **Problem:** Long hard-coded link list and `link_directories(../dependencies/lib/linux)`.
+- **Fix:** `target_link_libraries(Overture HPL)`; everything else comes through HPL. Output name stays `overture.bin`.
+- **Verified:** Configures with CMake 3.28 with no deprecation warnings. Build gives the same 70 GLee errors as before Phase 2 and nothing new; all 59 game files compile as C++11. No files are written into the sibling repos. Not linked or run yet.
+
+### Remove FLTK
+- **Repo / commit:** HPL1Engine `927c470` on `claude/project-thread-msxp3s`
+- **Files:** sources/impl/LowLevelSystemSDL.cpp, CMakeLists.txt
+- **Problem:** A whole GUI toolkit was linked for a single `fl_alert()` error popup on Linux/macOS.
+- **Fix:** The message is printed to stderr instead (converted with `cString::To8Char`). Windows keeps `MessageBox`. An SDL2 message box can replace it later.
+- **Verified:** Builds with `libfltk1.3-dev` uninstalled. Not run yet, so the stderr message itself is untested.
+
+### Remove the GLaux.lib pragma
+- **Repo / commit:** HPL1Engine `7f311e0` on `claude/project-thread-msxp3s`
+- **Files:** sources/impl/LowLevelGraphicsSDL.cpp
+- **Problem:** `#pragma comment(lib, "GLaux.lib")` made MSVC builds look for a deprecated library that isn't in the dependency bundle (Frictional forum).
+- **Fix:** Removed; nothing uses GLaux.
+- **Verified:** Compiles on GCC (the pragma only matters to MSVC). Not verified on Windows yet.
+
 
 ## Compiler / C++ fixes
 
