@@ -24,6 +24,34 @@
 #include "MapHandler.h"
 #include "GameStickArea.h"
 
+//-----------------------------------------------------------------------
+
+// PenumbraRevival: the grab brakes the held body's spin with a torque of
+// gain * error * mass. On a thin body (a bottle, a can) that is more than
+// enough to stop the spin in one step, so it overshoots every step and the
+// prop buzzes. Retail's Newton 1.53 didn't show this. Limit the torque, per
+// body axis, to what stops the error in one step; bodies that don't
+// overshoot get exactly the original torque.
+static cVector3f LimitGrabBrake(iPhysicsBody *apBody, const cVector3f &avTorque,
+								const cVector3f &avError, float afTimeStep)
+{
+	if(afTimeStep <= 0) return avTorque;
+
+	cMatrixf mtxRot = apBody->GetLocalMatrix().GetRotation();
+	cMatrixf mtxInvRot = mtxRot.GetTranspose();
+	cMatrixf mtxLocalI = cMath::MatrixMul(cMath::MatrixMul(mtxInvRot, apBody->GetInertiaMatrix()), mtxRot);
+
+	cVector3f vLocalTorque = cMath::MatrixMul(mtxInvRot, avTorque);
+	cVector3f vLocalError = cMath::MatrixMul(mtxInvRot, avError);
+	for(int i=0; i<3; ++i)
+	{
+		float fMax = std::abs(vLocalError.v[i]) * mtxLocalI.m[i][i] / afTimeStep;
+		if(vLocalTorque.v[i] > fMax) vLocalTorque.v[i] = fMax;
+		else if(vLocalTorque.v[i] < -fMax) vLocalTorque.v[i] = -fMax;
+	}
+	return cMath::MatrixMul(mtxRot, vLocalTorque);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // GRAB STATE
 //////////////////////////////////////////////////////////////////////////
@@ -183,7 +211,8 @@ void cPlayerState_Grab::OnUpdate(float afTimeStep)
 		cVector3f vTorque = mRotatePid.Output(cVector3f(0,0,0) - vOmega, afTimeStep);
 		vTorque = vTorque - vOmega * 0.1f;
 		
-		mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
+		mpPushBody->AddTorque(LimitGrabBrake(mpPushBody, vTorque * mpPushBody->GetMass(),
+											 cVector3f(0,0,0) - vOmega, afTimeStep));
 		//vTorque = cMath::MatrixMul(mpPushBody->GetInertiaMatrix(),vTorque);
 		//mpPushBody->AddTorque(vTorque);
 	}
@@ -197,7 +226,8 @@ void cPlayerState_Grab::OnUpdate(float afTimeStep)
 
 		cVector3f vTorque = mRotatePid.Output(cVector3f(0,fWantedSpeed,0) - vOmega, afTimeStep);
 
-		mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
+		mpPushBody->AddTorque(LimitGrabBrake(mpPushBody, vTorque * mpPushBody->GetMass(),
+											 cVector3f(0,fWantedSpeed,0) - vOmega, afTimeStep));
 		//vTorque = cMath::MatrixMul(mpPushBody->GetInertiaMatrix(),vTorque);
 		//mpPushBody->AddTorque(vTorque);
 
