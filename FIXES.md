@@ -212,6 +212,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Grab: spin brake limited so small props don't buzz (Phase 6)
+- **Repo:** PenumbraOverture
+- **Commit:** `bb7e43e` on `claude/project-thread-msxp3s`
+- **Files:** PlayerState_Interact.cpp
+- **Problem:** small held props (the whiskey bottle, soup cans) buzzed back and forth around their long axis; bigger ones (chair, backpack) were smooth. Retail shows no buzz. `cPlayerState_Grab` brakes the held body's spin with `0.9 * -omega * mass` (or `0.8 * (wanted - omega) * mass` while rotating with the player). A thin body has so little inertia about its long axis that this torque more than stops the spin in one step, so it overshoots every step; the layer's 45 degree cap then holds it at a fast back-and-forth. ScummVM's Newton 2.36, built for comparison, buzzes the same way, so retail's 1.53 must have handled this differently in a way we can't see.
+- **Fix:** `LimitGrabBrake` limits the brake torque, per body axis, to what removes the error in one step (`|error| * I / dt`). If the original torque is already below that it is used unchanged. The HaptX grab state is not changed.
+- **Feel:** only bodies whose brake overshot are affected; they now stop spinning instead of buzzing. Bodies that were smooth get exactly the original torque.
+- **Verified:** game builds. Headless check with the layer (same brake, body at an angle, 120 steps): a bottle-sized and a can-sized box buzzed at about 47 rad/s without the limit and stop within a few steps with it; a chair-sized box gets an identical torque with and without (difference 0). Not yet tried in game.
+
 ### Newton 1.53 layer: 45 degree spin cap per step (Phase 6)
 - **Repo:** HPL1Engine
 - **Commit:** `2d8565d` on `claude/project-thread-msxp3s`
