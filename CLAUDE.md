@@ -35,6 +35,7 @@ autonomously.
   [`FIXES.md`](FIXES.md)** in this repo: which repo, commit, files, the
   problem, the fix, and how it was verified. Update FIXES.md in the same step
   as the fix.
+- The ordered plan of work is in [`ROADMAP.md`](ROADMAP.md).
 - Background, the baseline build errors, known runtime bugs and the
   dependency situation are catalogued in [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
 
