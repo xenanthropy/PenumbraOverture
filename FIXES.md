@@ -94,6 +94,13 @@ ROADMAP Phase 2.
 ROADMAP Phase 1. After these, the only HPL1Engine errors left are the GLee
 ones (Phase 3), and all PenumbraOverture files compile.
 
+### Remaining compiler warnings cleared
+- **Repos / commits:** HPL1Engine `233e7dc`, OALWrapper `93a253d`, PenumbraOverture `2f72449`, all on `claude/project-thread-msxp3s`
+- **Files:** HPL1Engine sources/graphics/Renderer3D.cpp, sources/gui/GuiSkin.cpp; OALWrapper sources/OAL_OggSample.cpp; PenumbraOverture Init.cpp
+- **Problem:** warnings Xenan saw in a clean build: `NULL` passed to the `int` argument of `RenderDebugObject` and to the `cVector3f` fill value in `GuiSkin` (`-Wconversion-null`); `size_t` narrowed into `ogg_int64_t` in a brace initialiser (`-Wnarrowing`); `"Initializing "PRODUCT_NAME` read as a literal suffix (`-Wliteral-suffix`).
+- **Fix:** `0`, `cVector3f(0)`, an explicit `(ogg_int64_t)` cast, and spaces around the macros. Same values as before. The other warnings in that build were real bugs, logged under "Gameplay and engine bugs".
+- **Verified:** a clean Release build (GCC 13, x86_64, default warning flags) of all three repos, vendored code included, now prints **zero warnings**. Not checked with `-Wall`, which would show more.
+
 ### Sort comparators must be const (Renderer2D, GuiSet)
 - **Repo:** HPL1Engine
 - **Commit:** `7382405` on `claude/project-thread-msxp3s`
@@ -160,6 +167,22 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 
 ## Dependencies
+
+### AngelScript on 64-bit: bytecode pointers cut in half
+- **Repo:** HPL1Engine
+- **Commit:** `461bf61` on `claude/project-thread-msxp3s`
+- **Files:** external/angelscript/source/as_context.cpp, external/angelscript/README.md
+- **Problem:** once the tokenizer was fixed (below), the first script that made an object (any `string`) crashed in `asCScriptEngine::CallAlloc` with a pointer like `0x55612870`: the real 64-bit pointer with its upper half missing. The interpreter's `PTRARG(x)` macro was `asPTRWORD(*(x+1))` with `x` an `asDWORD *`, so it read 32 bits and widened them. Every pointer stored in the bytecode (`BC_ALLOC`, `BC_FREE`, `BC_OBJTYPE` and others) was affected.
+- **Fix:** read through the right type, `*(asPTRWORD*)(x+1)`. Item 3 in the vendored README's list of local changes.
+- **Verified:** a small test program set up the way HPL does (portability mode, HPL's `scriptstring`, generic functions, message callback through `asCALL_THISCALL`) passes all 15 checks in Debug and Release builds: building and running scripts, string/float/int/bool arguments, float returns, arrays, globals, loops, string + number, string comparison, `Prepare`/`Execute` with a return value, and a syntax error reported through the callback. Not yet run with game data.
+
+### AngelScript on 64-bit: start-up assertion in RegisterArrayObject
+- **Repo:** HPL1Engine
+- **Commit:** `f703388` on `claude/project-thread-msxp3s`
+- **Files:** external/angelscript/source/as_tokendef.h, external/angelscript/source/as_tokenizer.cpp, external/angelscript/README.md
+- **Problem:** the game aborted at start-up with `as_arrayobject.cpp:168: void RegisterArrayObject(asCScriptEngine*): Assertion 'r >= 0' failed` (reported by Xenan on CachyOS). `whiteSpace` was declared `const char *` and the tokenizer looped `w < sizeof(whiteSpace)`. That is 4 on 32-bit, which happens to be the length of `" \t\r\n"`, but 8 on 64-bit, so it read past the string and treated `'\0'` and the bytes after it, which included `'i'`, as white space. `int` was split into pieces, so registering anything with an `int` in its declaration failed. Release builds skip the assert and would fail later instead.
+- **Fix:** made `whiteSpace` an array and loop over `sizeof(whiteSpace) - 1`. Item 2 in the vendored README.
+- **Verified:** engine creation succeeds, then the test program above passes.
 
 ### AngelScript 2.7.1b built from source (portability mode)
 - **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `4e6e58b` (vendor, unmodified),
@@ -486,13 +509,51 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Gameplay and engine bugs
 
-_No entries yet._
+Bugs found while clearing compiler warnings. Each was a real fault, not just
+noise; the warning pointed at it.
+
+### Log writer used each message as a printf format
+- **Repo:** HPL1Engine
+- **Commit:** `9565367` on `claude/project-thread-msxp3s`
+- **Files:** sources/impl/LowLevelSystemSDL.cpp
+- **Problem:** `cLogWriter::Write` called `fprintf(mpFile, asMessage.c_str())`. A log line containing `%` (a file path, a script error) was read as format directives, giving garbage or a crash. GCC: `-Wformat-security`.
+- **Fix:** `fputs(asMessage.c_str(), mpFile)`.
+- **Verified:** compiles with no warning. Log output for normal lines is identical.
+
+### Frame number buffer overflow in ImageEntityData
+- **Repo:** HPL1Engine
+- **Commit:** `5c6aeb6` on `claude/project-thread-msxp3s`
+- **Files:** sources/graphics/ImageEntityData.cpp
+- **Problem:** `char buff[5]; sprintf(buff,"%d",lNum)` overflows for animation frame numbers of 10000 or more. GCC: `-Wformat-overflow`.
+- **Fix:** 16-byte buffer and `snprintf`. Same text for every frame number.
+- **Verified:** compiles with no warning.
+
+### Ignored results of system() and fread()
+- **Repo:** HPL1Engine
+- **Commit:** `136c139` on `claude/project-thread-msxp3s`
+- **Files:** sources/impl/LowLevelSystemSDL.cpp, sources/impl/SqScript.cpp
+- **Problem:** `OpenBrowserWindow` ignored whether `system()` succeeded; `cSqScript::LoadCharBuffer` ignored `fread`, so a short read compiled a partly filled buffer. GCC: `-Wunused-result`.
+- **Fix:** log a warning when opening a URL fails; return NULL on a short read, which the caller already reports as "Couldn't load script".
+- **Verified:** compiles with no warning. The URL is still passed to the shell unquoted, as in the original; worth revisiting with the launcher work.
+
+### Missing or short WAV file crashed
+- **Repo:** OALWrapper
+- **Commit:** `23a28ca` on `claude/project-thread-msxp3s`
+- **Files:** sources/OAL_WAVSample.cpp
+- **Problem:** `CreateFromFile` called `fseek` on the result of opening the file without checking it, so a missing file crashed, and it ignored `fread`'s result. GCC: `-Wunused-result`.
+- **Fix:** return false if the file can't be opened or isn't read in full.
+- **Verified:** compiles with no warning.
 
 ## Performance
 
 _No entries yet._
 
 ## Documentation
+
+### Arch package note for the Cg toolkit
+- **Repo:** PenumbraOverture (this commit)
+- **Files:** CLAUDE.md
+- **Change:** noted that on Arch-based systems (Xenan uses CachyOS) `nvidia-cg-toolkit` is in the official `extra` repo, not the AUR.
 
 ### Physics feel priority in CLAUDE.md
 - **Repo / commit:** PenumbraOverture `8380476`

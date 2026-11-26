@@ -227,4 +227,5 @@ Exit code 0 means every check passed. Run it after any change to
 
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
 libsdl-ttf2.0-dev libopenal-dev libvorbis-dev libogg-dev libglu1-mesa-dev
-libglew-dev nvidia-cg-toolkit`. FLTK and ALUT are no longer needed.
+libglew-dev nvidia-cg-toolkit`. FLTK and ALUT are no longer needed. On Arch
+(and CachyOS), `nvidia-cg-toolkit` is in the official `extra` repo.
