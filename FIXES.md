@@ -176,6 +176,33 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: joints obey HPL's limit callbacks (Phase 5, step 6)
+- **Repo / commit:** HPL1Engine `4434e4a`
+- **Files:** `external/newton-1.53/joints/NewtonHinge.cpp`, `NewtonSlider.cpp`,
+  `NewtonCylinder.cpp`, new `joints/NewtonHPL1Joints.h`, layer README
+- **Problem:** the hinge, slider and corkscrew wrappers called HPL1's
+  `LimitCallback` but discarded its return value and the row it filled in.
+  Every door, lever, drawer and screw limit (and one-sided stop) would have
+  been ignored. The default force bounds were also wrong (±1e-20, i.e. no
+  force at all, instead of unbounded).
+- **Fix:** as in Newton 2.36 (the reference for 1.53): base rows first, then,
+  if the callback returns non-zero, one row along the child's pin, angular
+  for the hinge and linear for the slider. For the corkscrew, bit 0 adds the
+  linear row (`desc[0]`) and bit 1 the angular row (`desc[1]`). The row
+  uses the callback's `m_accel` as motor acceleration and its min/max
+  friction as force bounds (unbounded unless the callback sets them). The
+  joint's angle and position are refreshed before the callback, so it sees
+  current values.
+- **Verified:** headless test with callbacks copied from HPL1's hinge and
+  slider `LimitCallback`: a hinge limited to ±0.5 rad overshoots by at most
+  0.009 rad and rests at −0.500 (unlimited it swings to −π); pushed away it
+  leaves the stop freely (one-sided). A bounded stop-motor row holds the arm
+  at 20 N·m and slips at 4 N·m (gravity torque 9.81 N·m). Slider and
+  corkscrew limited to ±1 m stop at −1.000 (lowest −1.006) and, pushed up,
+  leave the stop and halt at +1.000. Not yet checked in-game (door/lever
+  weight is a Phase 6 feel check). Note: the callback runs 3 times per
+  update because of Newton 4's 3 substeps; step 7 goes to 1 substep.
+
 ### Newton 1.53 layer: stubs and behaviour fixes (Phase 5, step 5)
 - **Repo / commits:** HPL1Engine `50900b6` (sleep query), `8caf8b1` (impulse,
   freeze), `84cce93` (joint stop helpers), `e130544` (ball cone axis),

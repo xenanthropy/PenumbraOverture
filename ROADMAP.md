@@ -204,7 +204,7 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
    four `Calculate Stop` helpers, body continuous-collision get/set. Also
    fixed the inverted `NewtonBodyGetSleepingState` and made
    `NewtonBallSetConeLimits` use the cone axis it's given.
-6. Make the joint wrappers honour HPL's limit callbacks (return value,
+6. ✅ Make the joint wrappers honour HPL's limit callbacks (return value,
    acceleration, min/max friction). **Highest risk for doors and levers.**
 7. Contact callbacks: run begin/process/end back to back per pair (HPL keeps
    their state in statics), keep Newton single-threaded, 1 substep instead of
