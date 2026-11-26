@@ -4,8 +4,10 @@ project(Overture)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(../OALWrapper ../OALWrapper)
-add_subdirectory(../HPL1Engine ../HPL1Engine)
+# The engine and audio wrapper live in sibling folders. Give them binary
+# folders inside this build tree, so nothing is written into their sources.
+add_subdirectory(../OALWrapper ${CMAKE_BINARY_DIR}/OALWrapper)
+add_subdirectory(../HPL1Engine ${CMAKE_BINARY_DIR}/HPL1Engine)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/include
