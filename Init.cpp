@@ -393,7 +393,10 @@ bool cInit::Init(tString asCommandLine)
 	Vars.AddBool("UseVoiceManagement", mpConfig->GetBool("Sound","UseVoiceManagement",true));
 	Vars.AddInt("MaxMonoChannelsHint",mlMaxMonoChannelsHint);
 	Vars.AddInt("MaxStereoChannelsHint",mlMaxStereoChannelsHint);
-	Vars.AddInt("StreamBufferSize",mpConfig->GetInt("Sound", "StreamBufferSize", 64));
+	// 16 KB per stream buffer (was 64, which OALWrapper raised to its 4 KB minimum).
+	// 4 x 4 KB is only ~93 ms of 44.1 kHz stereo, less than the 100 ms between
+	// stream refills, so streamed music kept running dry and stuttered.
+	Vars.AddInt("StreamBufferSize",mpConfig->GetInt("Sound", "StreamBufferSize", 16384));
 	Vars.AddInt("StreamBufferCount",mpConfig->GetInt("Sound", "StreamBufferCount", 4));
 	Vars.AddString("DeviceName",mpConfig->GetString("Sound", "DeviceName", "NULL"));
 	Vars.AddString("WindowCaption", "Penumbra Loading...");
