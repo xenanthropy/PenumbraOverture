@@ -212,6 +212,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: a body rests only after framesCount quiet steps (Phase 6)
+- **Repo:** HPL1Engine
+- **Commit:** `7bb4dc3` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/NewtonBody.h, NewtonHPL1Engine.cpp, newtonWorld.cpp, README.md, tests/newton153_test.cpp
+- **Problem:** in the boat level the paraffin lamp, swinging with the wave gravity, froze for a split second every second or two. Newton 4 put a body to rest, and zeroed its velocity, on the first step it was below its thresholds, so the lamp stopped dead whenever its slow swing slowed down. 1.53 (per its documentation of `NewtonBodySetFreezeTreshold`) waited `framesCount` steps in a row, and HPL passes 10. `cEffect_WaveGravity` wakes every body each frame (`NewtonWorldUnfreezeBody`), so in retail the count never ran out and the lamp kept swinging.
+- **Fix:** the layer's body class keeps `framesCount` and a count of quiet steps. The body may rest only once the count reaches `framesCount`; a step above the thresholds, or `NewtonWorldUnfreezeBody`, starts it again. Bodies that never get per-body thresholds keep Newton 4's behaviour.
+- **Feel:** props now come to rest about 1/6 s (10 steps) after slowing down instead of at once, as in 1.53. Anything woken every frame, such as the boat's loose objects, keeps moving smoothly.
+- **Verified:** headless boat scene (lamp bodies, joints and beam from the map, 40 s of wave gravity with the per-frame wake): the lamp stood still on 96 steps before, 8 after (the turning points of the swing; ScummVM's 2.36 shows 11 with sleeping off). Two new layer checks (68/68 pass), both fail without the change: a body under its threshold rests only after 10 quiet steps, and a pendulum woken every frame keeps swinging under slowly tilting gravity. Floor, stack and slide checks are unchanged. Not yet tried in game.
+
 ### Newton 1.53 layer: level mesh faces a body can leave sideways are skipped (Phase 6)
 - **Repo:** HPL1Engine
 - **Commit:** `2a91d6c` on `claude/project-thread-msxp3s`

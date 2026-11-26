@@ -223,7 +223,7 @@ It keeps its settings, saves and `hpl.log` in
 ### Physics test
 
 A headless test checks the Newton 1.53 layer the way the engine uses it
-(66 checks: collisions, joints and their limit callbacks, sleeping,
+(68 checks: collisions, joints and their limit callbacks, sleeping,
 impulses, materials and contact callbacks, the world box, the NaN guard,
 the spin cap and level meshes). It draws nothing, so it gives
 the same result on any machine; it doesn't replace playing the game. It is
