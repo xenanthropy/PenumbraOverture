@@ -168,6 +168,16 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 2.36 core as a build option (Phase 6)
+- **Repo:** HPL1Engine
+- **Commit:** `483cab2` (core and switch), `9d13d76` (test) on `claude/project-thread-msxp3s`
+- **Files:** CMakeLists.txt, external/newton-2.36/ (new: core236/ from ScummVM, newton153_on_236.cpp, include/Newton.h, CMakeLists.txt, README.md), external/newton-1.53/tests/newton153_test.cpp
+- **Problem:** some of Penumbra's physics can't be matched on Newton 4 without rewriting its contact code. The clearest case is the boat lamp: Newton 4 treats level mesh faces as one-sided, so a push sweeps the chain along the ceiling beam toward the locker, where retail stops it. Newton 2.36 is much closer to 1.53 (two-sided thin plates, 1.x sleep thresholds, solver models and joint readouts), and is the documented fallback in ROADMAP Phase 5.
+- **Fix:** `-DHPL1_NEWTON_CORE=236` builds ScummVM's Newton 2.36 (commit `695524fef`) with a shim that provides the 1.53 API instead of the Newton 4 layer. Newton 4 stays the default. Local changes to the core: every `Newton...` name renamed `N236_...` so both APIs can coexist; a const mismatch that left `NewtonJointSetDestructor` undefined; an endless loop in `dgPolyhedra::EdgePenalty` left by a ScummVM rename, which hung loading any optimised level mesh; and 1.53's rule that a body rests only after `framesCount` quiet steps (default 10). The shim keeps the Newton 4 layer's behaviour where HPL depends on it: matrices copied to aligned buffers, `NewtonCollisionCollide` normals pointing from B to A, the NaN guard, the world-box stop, and waking a resting body when its velocity is set. Details in external/newton-2.36/README.md.
+- **Test changes (both cores):** test boxes get zero damping, since the cores' defaults differ and HPL sets damping on every entity body. The sleeping-state check uses a fast body, because 1.53's default thresholds rest a slow one too. Joint angle and slider position also accept the reading from one step earlier, which is how 1.x and 2.x report them.
+- **Feel:** nothing changes unless the option is set. On 2.36 the boat lamp matches ScummVM's own 2.36 build for the same solver setting. With HPL's default "High" accuracy (exact solver), a push of 2 m/s tilts the chain about 7° toward either wall. With "Medium" (adaptive solver) the bed side still stops at about 7° and the locker side reaches about 29°. Newton 4 reaches 30° both ways.
+- **Verified:** 68/68 layer checks pass on both cores. The full game builds and links with each core. Headless boat lamp scene (map geometry, 40 s of wave gravity with the per-frame wake, then a push each way): on 2.36 the lamp stands still on 4 to 6 of 2400 steps, against 4 to 8 on Newton 4. Not yet tried in game, and the missing boat notebook was not reproduced headless: its .ent and the table's .ent weren't available.
+
 ### AngelScript on 64-bit: bytecode pointers cut in half
 - **Repo:** HPL1Engine
 - **Commit:** `461bf61` on `claude/project-thread-msxp3s`

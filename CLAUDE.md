@@ -142,7 +142,10 @@ parent/
   `external/angelscript` (Phase 4, always `AS_MAX_PORTABILITY`). Newton is
   Julio Jerez's 1.53 compatibility layer on the Newton 4 core, vendored and
   completed in `external/newton-1.53` (Phase 5; local changes listed in its
-  README). Nothing comes from a prebuilt bundle any more.
+  README). Since Phase 6, `-DHPL1_NEWTON_CORE=236` builds ScummVM's Newton
+  2.36 core (`external/newton-2.36`, with a shim for the same 1.53 API)
+  instead; Newton 4 is still the default. Nothing comes from a prebuilt
+  bundle any more.
 
 ### OALWrapper (audio, static lib)
 
@@ -234,7 +237,10 @@ make newton153_test && ./HPL1Engine/external/newton-1.53/newton153_test
 ```
 
 Exit code 0 means every check passed. Run it after any change to
-`HPL1Engine/external/newton-1.53`. The source is
+`HPL1Engine/external/newton-1.53`. In a build configured with
+`-DHPL1_NEWTON_CORE=236`, the same checks run against the 2.36 core with
+`make newton236_test && ./HPL1Engine/external/newton-2.36/newton236_test`;
+run that after any change to `HPL1Engine/external/newton-2.36`. The source is
 `HPL1Engine/external/newton-1.53/tests/newton153_test.cpp`.
 
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
