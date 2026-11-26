@@ -57,6 +57,20 @@ x86_64, from `system/Script.h`), 3x `-Wliteral-suffix`, 2x
 Items 3, 4 and 5, plus the warnings, were already fixed in community forks
 (section 5).
 
+### 1c. With the original `Newton.h` header supplied too
+
+Using the `Newton.h` from the original `dependencies.zip` (section 3a), all
+the Newton backend files compile on x86_64. HPL1Engine drops to **82 errors**,
+and the only new one is:
+
+| # | Where | Error | Cause |
+|---|-------|-------|-------|
+| 7 | `sources/impl/PhysicsBodyNewton.cpp:104` | taking address of rvalue | `&apEntity->GetLocalMatrix().GetTranspose().m[0][0]` takes the address of a temporary matrix |
+
+So once GLee is replaced and items 3–7 are fixed, HPL1Engine should compile
+completely. **Linking is a separate problem**: the only Newton 1.53 library
+that exists is 32-bit (section 3a), so a 64-bit build cannot link it.
+
 ## 2. Runtime bugs reported by players
 
 ### AMD / Mesa crash: coin in the vice (Black Plague), fishing boat (Overture)
@@ -116,6 +130,46 @@ Items 3, 4 and 5, plus the warnings, were already fixed in community forks
 | OpenAL, ALUT, Ogg/Vorbis, Theora | — | Distro packages | Fine. |
 | TinyXML | bundled | — | Fine. |
 
+### 3a. The original dependency bundles (examined 2026-11-26)
+
+Two bundles, supplied by the owner and kept outside the repos (never commit
+them):
+
+- **`dependencies.zip`**: the original 2010 Frictional bundle, now only on
+  archive.org.
+  - `include/`: `angelscript.h` (2.7.1b), `Newton.h`, plus AL, Cg, FL, GL
+    (GLee **5.2**; the engine repo carries 5.4), SDL, ogg, vorbis, theora headers.
+  - `lib/linux/`: **every binary is 32-bit i386**, built with GCC 4.0.2
+    (2006). There are static `libNewton.a`, `libangelscript.a`, `libSDLmain.a`
+    and shared Cg, CgGL, GLU, SDL, SDL_image, SDL_ttf, alut, fltk 1.1, jpeg,
+    ogg, openal, png12, vorbis, vorbisfile, and even `libstdc++.so.6.0.7`.
+  - `lib/win32/`: 32-bit `.lib`/`.dll` for the same set, including
+    `Newton.dll`/`newton.lib` (**no `GLaux.lib`**; see section 6).
+  - `lib/macosx/`: `libnewton32.a`, `libas.a`, `libfltk.a` and
+    Ogg/Vorbis/Theora/ALUT frameworks.
+- **`dependencies-Linux.tar.gz`** (onager, 2020): only `Newton.h`,
+  `angelscript.h`, `libNewton.a` and `libangelscript.a`, all 32-bit.
+
+**Newton is in both bundles.** Its header and `libNewton.a` are
+byte-identical between the two (the 2020 bundle just re-ships the 2010
+library). It is Newton 1.5x, 32-bit x86 only, with no source. The Linux
+archive is 60 object files (`Newton.o`, `NewtonClass.o`, `NewtonRagdoll.o`,
+...).
+
+**The bundled AngelScript header matches our source build.** The
+`angelscript.h` from SourceForge `branches/2.7.1` is identical to the bundled
+one, apart from the one-line GCC fix below. So the SourceForge copy really is
+the original 2.7.1b. onager's `libangelscript.a` is his 2020 32-bit
+`AS_MAX_PORTABILITY` rebuild; the 2010 one is the stock (native-call) build.
+
+**What this means:** the original 32-bit setup could probably be rebuilt
+today with a multilib (`-m32`) toolchain and these blobs. That is useful
+for comparing behaviour, but it is a dead end for a modern 64-bit,
+cross-platform build. Newton is the only dependency that truly can't be
+rebuilt from source.
+
+### 3b. AngelScript notes
+
 **AngelScript 2.7.1b on modern GCC.** `include/angelscript.h:784` has
 `return 0;` in the generic `asSMethodPtr<N>::Convert`, which returns an
 `asUPtr` union. Old GCC never checked that body because it was never
@@ -146,7 +200,56 @@ Options, to discuss before choosing:
 3. Port to a different physics library (Bullet, Jolt). This is far more
    work, and physics behaviour would change.
 
-## 5. Community forks and references
+## 5. Notes from the Windows guides (2010–2013)
+
+From JKO's guide (2010, Visual Studio 2010) and the "compiling under Visual
+Studio 2012" thread. They are older than onager's 2020 Linux guide, so where
+they conflict, onager's is more current. Still relevant when we get to
+Windows:
+
+- **The VS project files were never really maintained.** They were hand-edited
+  by a non-Windows developer. OALWrapper had no usable project at first, and
+  output folders (`OALWrapper/lib`, `HPL1Engine/lib`) had to be created by hand.
+- **`Penumbra.sln` Debug config is broken:** both Debug and Release use the
+  Release settings. Making a real Debug build hits `_ITERATOR_DEBUG_LEVEL`
+  mismatches unless HPL, OALWrapper and the game are all built in Debug
+  (`HPLd.lib`), and even then people hit a Debug assertion in OALWrapper.
+- **`GLaux.lib`** is missing from the dependency bundle. It is pulled in by
+  `#pragma comment(lib, "GLaux.lib")` at
+  `HPL1Engine/sources/impl/LowLevelGraphicsSDL.cpp:22`. GLaux is long
+  deprecated and the pragma can likely just go. Someone also hit
+  **`TaskKeyHook.lib` not found**; it isn't in the bundle either, and no
+  answer was posted.
+- **`#include <functional>`** must be added to `TriggerHandler.h` and
+  `MainMenu.cpp` for VS2012+ (about 600 errors otherwise). GCC 13 happens to
+  compile these today through transitive includes, but MSVC won't.
+- **`SDLTexture.cpp:611` `pow` ambiguity** on MSVC: `pow((float)2,(int)mlSizeLevel)`.
+  The guide's suggested fix is `(int)pow((float)2,(int)mlSizeLevel)` with a
+  float cast, or better, use an integer shift `1 << mlSizeLevel`.
+- **OALWrapper version mismatch:** newer OALWrapper made ALUT optional, so the
+  stock game needed `WITH_ALUT` defined, the bundle's AL headers swapped for
+  OALWrapper's, or an older OALWrapper. Our current OALWrapper + HPL1Engine
+  pair no longer uses ALUT at all (no `alut` references in either), so this
+  doesn't apply to us. Older `OV_CALLBACKS_DEFAULT` errors came from the old
+  vorbis headers in the bundle.
+- onager's 2020 guide pins OALWrapper to commit `ae59c6d7bd47…` (via
+  jorgeas80's fork) as the one compatible with stock HPL1. **That commit is not
+  in our OALWrapper fork's history.** Our HPL1Engine was updated in 2014 for the
+  newer OALWrapper, and our OALWrapper compiles, so no pin should be needed.
+  This is not verified at runtime.
+- **GLee errors in that thread are a different problem from ours.**
+  Vasator's VS2008 `GLee.c(746) syntax error : identifier
+  'GLee_Lazy_glBlendColor'` was an include-path mistake: `GLee.c` picked up
+  the wrong `GLee.h`. He fixed it by pointing `GLee.c` at the right header.
+  Our GCC errors come from GLee's `__glext_h_` guard clashing with modern
+  Khronos `glext.h`, which no include path will fix. One overlap is worth
+  remembering: the bundle ships GLee **5.2** and the engine repo has **5.4**,
+  so mixing them up is easy.
+- Runtime: run from `redist/`, and copy `materials.cfg` and `resources.cfg`
+  alongside the asset folders. Missing them gives errors like "Couldn't load
+  image 'effect_white.jpg'" or "Unable to load PointLight2D".
+
+## 6. Community forks and references
 
 - **Kristian-Popov/HPL1Engine**: has a `fix_compilation` branch (2017),
   taking-address-of-temporary, `unistd.h`, overload resolution, bool to
@@ -164,10 +267,17 @@ Options, to discuss before choosing:
 
 ### Sources
 
+Copies of the forum threads below (as Markdown) and both dependency bundles
+were supplied by the owner and are kept outside the repos.
+
 - Frictional forum, "OK.. here's a quick building guide" (Urkle, 2010):
   https://forum.frictionalgames.com/thread-3360.html
 - Frictional forum, "Compilation instructions for Ubuntu 12.04 32 bit" (2020):
   https://forum.frictionalgames.com/thread-56758.html
+- Frictional forum, "JKO's Guide to compiling Penumbra" (2010, Windows):
+  https://forum.frictionalgames.com/thread-3592.html
+- Frictional forum, "compiling under Visual Studio 2012" (2013):
+  https://www.frictionalgames.com/forum/thread-22527.html
 - Frictional forum, "Let's make this working on Android" (2020):
   https://forum.frictionalgames.com/thread-56750.html
 - GamingOnLinux, "A look at the Penumbra Collection on Linux with Mesa in
