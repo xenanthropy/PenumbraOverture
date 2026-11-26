@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: resting bodies joined to awake ones wake, as in 1.53 (outside hatch wheel)
+- **Repo:** HPL1Engine
+- **Commit:** `6c09a1f` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newtonWorld.cpp, newtonWorld.h, README.md, tests/newton153_test.cpp
+- **Problem:** in level01_01_outside the hatch's wheel stayed in place on screen while the hatch opened through it. The wheel sits at its joint limit, so HPL1's `LimitAutoSleep` rests it after every step. Newton 4 still dragged it along through the joint, but left it marked asleep and never called its transform callback, so the drawn wheel never moved. The original 1.53 library wakes a resting body that is jointed to an awake one at the start of the next update.
+- **Fix:** before each update, wake any resting dynamic body jointed to an awake dynamic body, repeated along chains of joints.
+- **Feel:** only affects bodies put to rest while jointed to a moving body; they now move and are drawn with it, as in 1.53.
+- **Verified:** headless copy of the hatch and wheel (masses changed at unlock as the map script does, wheel rested after each step): the reported wheel matrix now follows the hatch, and previously stayed at its start. New check passes on the original library and here, failed before; 77/77 pass. The full game builds. Not yet tried in game.
+
 ### Newton 1.53 layer: level faces are thin plates, as in 1.53 (lamp stretching sideways)
 - **Repo:** HPL1Engine
 - **Commit:** `39ba4f0` on `claude/project-thread-msxp3s`
