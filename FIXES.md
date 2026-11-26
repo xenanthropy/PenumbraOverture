@@ -168,6 +168,16 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: continuous collision, as in 1.53 (cans through walls)
+- **Repo:** HPL1Engine
+- **Commit:** `996ba43` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newtonWorld.cpp, newtonWorld.h, NewtonHPL1Engine.cpp, NewtonDeprecated.cpp, README.md, tests/newton153_test.cpp
+- **Problem:** on the boat, a can slammed fast into the locker wall went straight through it almost every time, and a can thrown off a barrel sometimes passed through the barrel and the floor. Retail doesn't do this. HPL1 turns continuous collision on for every object body and every material pair. The original 1.53 library honours it: a can-sized cylinder fired at a level wall bounces off at any speed up to 50 m/s. The layer ignored both switches and Newton 4's world step has no continuous collision, so the can passed through from 5 m/s.
+- **Fix:** before each update, each awake body with the switch on that moves more than a quarter of its smallest radius in the step (2.36's rule) is swept along its velocity with Newton 4's shape cast, compound shapes part by part. The sweep only counts bodies it collides with whose material pair has the switch on. If the body would hit something during the step, the world takes the step in two parts, split at the moment of impact, so the contact, its bounce and the contact callbacks (impact sounds) happen as usual. There are at most 8 parts per update, as in 2.36. `NewtonMaterialSetContinuousCollisionMode` now stores its switch.
+- **Feel:** steps where nothing is about to be hit are unchanged, so slow pushing, stacking and resting don't change. Fast props now bounce off walls instead of passing through. Rebound speeds match 2.36's within 1%; 1.53's are up to 12% lower at 5 to 20 m/s. Unlike 1.53, the split applies to the whole world's step, not only the fast body's island, so other bodies take that step in two parts. Checked headlessly only.
+- **Not done:** the sweep ignores the body's spin, and doesn't catch level faces from behind (1.53 does; only matters for a body already inside the level).
+- **Verified:** headless shots at a level wall (3 to 50 m/s), a 1 cm thin box, a resting barrel, a can thrown into a wall off the floor, a fast drop onto the floor and a two-part body: no tunnelling with the switch on, as in 1.53. Five new checks (82 total) pass on the layer and on the original library (which still fails only the three safety nets). The 2.36 core passes the five new checks too. The full game builds. The held-can lag Xenan noticed is not the engine: a held prop following a fast swing with the game's grab settings has the same lag and top speed on 1.53, 2.36 and here. Not yet tried in game.
+
 ### Newton 1.53 layer: resting bodies joined to awake ones wake, as in 1.53 (outside hatch wheel)
 - **Repo:** HPL1Engine
 - **Commit:** `6c09a1f` on `claude/project-thread-msxp3s`
