@@ -119,6 +119,15 @@ that exists is 32-bit (section 3a), so a 64-bit build cannot link it.
 
 ### Found in our build
 
+- **Menu text and cursor look soft at high resolutions.** At 2560x1440 the
+  main menu's text and the mouse cursor look pixelated/blurry, and the cursor
+  slightly stretched (Xenan). They are bitmap images drawn in a fixed
+  800x600 GUI space and scaled up. Later: higher-resolution GUI images or
+  aspect-correct scaling, keeping the original look.
+- **First-run graphics defaults are low.** A fresh settings file (from the
+  game data's `config/default_settings.cfg`) leaves anti-aliasing and some
+  effects off. Later: pick better defaults on first run.
+
 - **Segfault after a fatal error.** `FatalError()` calls `exit(1)` from
   wherever it is, with the engine half built. Static destructors and
   `atexit` handlers then run against that state and often segfault. The real
