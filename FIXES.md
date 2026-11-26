@@ -176,6 +176,38 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer linked into HPL; prebuilt libNewton.a dropped (Phase 5, step 8)
+- **Repo / commits:** HPL1Engine `7714694`, `7c968af`, `254d709`
+- **Files:** `CMakeLists.txt`, `external/newton-1.53/NewtonHPL1Engine.cpp`,
+  `NewtonDeprecated.cpp`, `joints/NewtonJoints.h/.cpp`, `Newton.h`, layer
+  README; PenumbraOverture `CLAUDE.md`
+- **Problem:** HPL still linked the IMPORTED 32-bit `libNewton.a` from
+  `HPL_DEPENDENCIES_DIR`. Linking the layer instead showed 3 more functions
+  that only existed inside `#if 0`: `NewtonDestroyJoint`,
+  `NewtonJointGetCollisionState`, `NewtonJointGetStiffness` (called from the
+  header `PhysicsJointNewton.h`, which the earlier symbol check, done over
+  `.cpp` files only, missed). `NewtonJointSetCollisionState` was live but
+  only asserted, so a map's "joined bodies collide" setting was ignored.
+  `Newton.h` used `size_t` without including `<stddef.h>`.
+- **Fix:** HPL links `newton153`; the IMPORTED target, the
+  `HPL_DEPENDENCIES_DIR` option and its include path are gone. The joint
+  functions are defined: destroy removes the joint (its destructor callback
+  runs), collision state maps to Newton 4's per-joint collidable flag
+  (default off, as in 1.53), stiffness is stored and reported (default 0.9)
+  but has no effect, as Newton 4 has no equivalent. `Newton.h` includes
+  `<stddef.h>`.
+- **Verified:** a fresh build folder configures with no extra options and
+  `make` builds everything with **no errors**: `overture.bin` is a 64-bit
+  x86-64 executable. Headless test: joint collision state defaults to 0 and
+  toggles; stiffness reads back; destroying a ball joint runs its
+  destructor once and the hanging box falls; overlapping jointed bodies
+  don't push apart unless collision is enabled. All step 4–7 tests still
+  pass, and compile without `<cstddef>`. Started without a display or game
+  data, the game logs its module start-up and stops at "Unable to initialize
+  display" as expected (it then segfaults on that error path, which is the
+  engine's existing behaviour and unrelated; to look at in Phase 6). Not
+  run with game data yet.
+
 ### Newton 1.53 layer: contact materials, callbacks and world update (Phase 5, step 7)
 - **Repo / commits:** HPL1Engine `db0ad1f`, `2cfee41`, `e666f69`, `7a5d954`,
   `f0aa30a`, `758ec5d`, README `f7d6709`

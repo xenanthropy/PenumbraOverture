@@ -133,7 +133,9 @@ parent/
 - Since Phase 2 the `HPL` target finds and links its own dependencies
   (`find_package` + `cmake/FindCg.cmake`). AngelScript 2.7.1b is vendored in
   `external/angelscript` (Phase 4, always `AS_MAX_PORTABILITY`). Newton is
-  still IMPORTED from `HPL_DEPENDENCIES_DIR` until Phase 5.
+  Julio Jerez's 1.53 compatibility layer on the Newton 4 core, vendored and
+  completed in `external/newton-1.53` (Phase 5; local changes listed in its
+  README). Nothing comes from a prebuilt bundle any more.
 
 ### OALWrapper (audio, static lib)
 
@@ -192,20 +194,20 @@ ScummVM repo, GPLv3) that already solved Newton, AngelScript 2.35 and many
 64-bit / modern-compiler issues. It is a good place to compare fixes, while
 keeping in mind it targets ScummVM's own platform layer, not SDL directly.
 
-## Building (current, expected to fail)
+## Building
 
-Use a build folder that is **not** inside any of the three repos. Point
-`HPL_DEPENDENCIES_DIR` at a folder containing only `include/Newton.h` and
-`lib/linux/libNewton.a` (temporary, until Phase 5 builds Newton from
-source). Don't leave the old bundle's `angelscript.h` in there: it would
-shadow the vendored one. AngelScript is built from
-`HPL1Engine/external/angelscript` since Phase 4.
+Since Phase 5 the whole game builds and links on Linux (GCC 13, x86_64)
+with no prebuilt bundle: AngelScript and Newton are built from the vendored
+sources in `HPL1Engine/external`. It has not been run with game data yet
+(Phase 6). Use a build folder that is **not** inside any of the three repos.
 
 ```sh
 mkdir build && cd build
-cmake /path/to/PenumbraOverture -DHPL_DEPENDENCIES_DIR=/path/to/dependencies
-make -k -j"$(nproc)"
+cmake /path/to/PenumbraOverture -DCMAKE_BUILD_TYPE=Release
+make -j"$(nproc)"
 ```
+
+The game binary is `overture.bin` in the build folder.
 
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
 libsdl-ttf2.0-dev libopenal-dev libvorbis-dev libogg-dev libglu1-mesa-dev

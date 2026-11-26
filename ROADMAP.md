@@ -212,7 +212,7 @@ listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
    there. Along the way: contacts now use the bodies' materials (they never
    did, so no callbacks ran), the SIMD8 solver was swapped for the standard
    one, and stale contacts are dropped.
-8. Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
+8. ✅ Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
    `HPL_DEPENDENCIES_DIR`. (The layer's `Newton.h` uses `size_t` without
    including `<stddef.h>`; add it if anything trips on it.)
 9. A small headless physics test (falling box, hinge limit, impulse Δv,
