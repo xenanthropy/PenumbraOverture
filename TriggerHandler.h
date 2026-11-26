@@ -22,6 +22,7 @@
 #include "StdAfx.h"
 
 #include "GameTypes.h"
+#include <functional>
 
 using namespace hpl;
 

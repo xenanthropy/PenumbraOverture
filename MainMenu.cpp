@@ -23,6 +23,7 @@
 #include "ButtonHandler.h"
 #include "MapHandler.h"
 #include "SaveHandler.h"
+#include <functional>
 #include "IntroStory.h"
 #include "Player.h"
 #include "PlayerHelper.h"
