@@ -49,6 +49,18 @@ Get Penumbra Overture and its engine building cleanly on modern Linux and
 Windows (and ideally macOS), fix bugs, and improve performance, while keeping
 the original game behaviour.
 
+## Performance testing
+
+Once the game runs, we profile and optimise it. The baseline to compare
+against is the **retail Steam Linux port** of Penumbra Overture, played by
+the owner, in whatever areas they can reach in both builds. Compare like
+with like: same machine, same settings, same spot in a map. Use frame
+time/FPS and load times as the main measures.
+
+Don't set up a 32-bit "original" build environment for this. Retail vs.
+our build is the comparison the owner wants, even though the retail port was
+built by someone else with unknown settings.
+
 ## The three repositories
 
 They are expected to be checked out **side by side** in one parent folder:
