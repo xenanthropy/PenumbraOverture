@@ -147,7 +147,12 @@ project.
 All Newton code lives in 11 files, `HPL1Engine/sources/impl/*Newton*` (about
 2,700 lines). The game itself never calls Newton.
 
-**Decision (pending): which Newton.** New option found 2026-11-26.
+**Decision (made 2026-11-26): A, Julio Jerez's 1.53 compatibility layer on
+Newton 4**, pinned to upstream commit `294f27f6cde10c3c269041c3c4944cefb0480dbf`
+(master as of 2026-11-25). Upstream is still in progress, so we treat this as
+an experiment and compare game feel carefully. **B (Newton 2.36, ScummVM
+route) remains the documented fallback** if A turns out incomplete or changes
+the game too much.
 
 - **A. Julio Jerez's Newton 1.53 compatibility layer (recommended).** The
   Newton author is writing a backport of the *1.53 API* on top of Newton 4.
