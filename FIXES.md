@@ -212,6 +212,14 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer: world box and NaN guard (Phase 6)
+- **Repo:** HPL1Engine
+- **Commit:** `3d1f5ee` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newtonWorld.cpp, newtonWorld.h, NewtonBody.cpp, NewtonBody.h, NewtonDeprecated.cpp, README.md, tests/newton153_test.cpp
+- **Problem:** in level 1, Xenan grabbed the boat's paraffin lamp; it flew out of the map and the game hung (sound kept playing, no input). `NewtonSetWorldSize` was a no-op in the layer, so nothing stopped a body leaving the level. 1.53 disables any body that leaves its world box (HPL sets it to the level's bounds plus 10 m).
+- **Fix:** the layer keeps the world box (default +-100, as at 1.53 world creation) and after each update disables a dynamic body whose bounding box is outside it: velocity zeroed and put to sleep, each update while it stays out. A body whose matrix or velocity becomes NaN/inf is put back at its last valid matrix and stopped, with one message on stderr. Feel: no change for bodies inside the level; matches 1.53 at the edge.
+- **Verified:** 6 new checks in the layer test (59/59 pass): a pushed body stops at the box edge and stays there, a body inside moves normally, and a NaN velocity leaves the body at its last valid position, stopped. Newton 4 on its own was also checked: a body flying for 20,000 steps or with a NaN velocity didn't hang it, so the hang was probably in the engine handling an absurd position, which this prevents. Not yet confirmed in game. The lamp freezing when grabbed and then flying is not explained yet (see the lamp's load errors in the log).
+
 ### Headless Newton layer test (Phase 5, step 9)
 - **Repo / commit:** HPL1Engine `2e2a3d8`
 - **Files:** `external/newton-1.53/tests/newton153_test.cpp`,
