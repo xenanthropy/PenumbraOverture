@@ -60,20 +60,20 @@ class cMainMenu;
 	#define PERSONAL_RELATIVEROOT
 	#define PERSONAL_RELATIVEPIECES
 	#define PERSONAL_RELATIVEPIECES_COUNT 0
-	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
-	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraRevival/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraRevival/Overture/")
 #elif defined(__linux__)
 	#define PERSONAL_RELATIVEROOT _W(".local/share/")
 	#define PERSONAL_RELATIVEPIECES _W(".local"), _W(".local/share"),
 	#define PERSONAL_RELATIVEPIECES_COUNT 2
-	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
-	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraRevival/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraRevival/Overture/")
 #else
 	#define PERSONAL_RELATIVEROOT _W("Library/Application Support/")
 	#define PERSONAL_RELATIVEPIECES _W("Library"), _W("Library/Application Support"),
 	#define PERSONAL_RELATIVEPIECES_COUNT 2
-	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraOverture/")
-	#define PERSONAL_RELATIVEGAME _W("PenumbraOverture/")
+	#define PERSONAL_RELATIVEGAME_PARENT _W("PenumbraRevival/")
+	#define PERSONAL_RELATIVEGAME _W("PenumbraRevival/Overture/")
 #endif
 
 //--------------------------------------------------------

@@ -514,8 +514,8 @@ ones (Phase 3), and all PenumbraOverture files compile.
 - **Commit:** `bb8268d` on `claude/project-thread-msxp3s`
 - **Files:** Init.h, Init.cpp
 - **Problem:** the build used the same user folder as the retail game (`~/.frictionalgames/Penumbra/Overture` on Linux). Xenan's first run overwrote the retail `hpl.log`, and it would read the retail settings (which is how the -1 resolution below got in) and could overwrite retail saves.
-- **Fix:** settings, saves and logs now go to `PenumbraOverture/` under `~/.local/share` (Linux), `Documents` (Windows) and `~/Library/Application Support` (macOS). Removed the retail code that moved an old `Penumbra Overture/Episode1` folder, which would now look in the wrong place. `XDG_DATA_HOME` isn't read yet; the path is always relative to `$HOME`.
-- **Verified:** a run under Xvfb wrote `hpl.log` and `settings.cfg` to `~/.local/share/PenumbraOverture/` and created no `.frictionalgames` folder. Not built on Windows or macOS.
+- **Fix:** settings, saves and logs now go to `PenumbraRevival/Overture/` under `~/.local/share` (Linux), `Documents` (Windows) and `~/Library/Application Support` (macOS). Removed the retail code that moved an old `Penumbra Overture/Episode1` folder, which would now look in the wrong place. `XDG_DATA_HOME` isn't read yet; the path is always relative to `$HOME`.
+- **Verified:** a run under Xvfb wrote `hpl.log` and `settings.cfg` to `~/.local/share/PenumbraOverture/` (renamed to `PenumbraRevival/Overture/` afterwards, same code path) and created no `.frictionalgames` folder. Not built on Windows or macOS.
 
 ### Audio never opened: device "NULL"
 - **Repo:** HPL1Engine

@@ -45,6 +45,13 @@ autonomously.
 
 ## Goal
 
+The project is called **PenumbraRevival**. Overture comes first; the aim is
+to get all three Penumbra games (Overture, Black Plague, Requiem) working.
+Avoid names that sound like the retail release. Each game keeps its user
+data in its own folder under `PenumbraRevival/` (`Overture/`,
+`Black Plague/`, `Requiem/`), mirroring the retail `Penumbra/Overture`
+layout, so their `hpl.log`, settings and saves never collide.
+
 Get Penumbra Overture and its engine building cleanly on modern Linux and
 Windows (and ideally macOS), fix bugs, and improve performance, while keeping
 the original game behaviour.
@@ -209,7 +216,8 @@ make -j"$(nproc)"
 
 The game binary is `overture.bin` in the build folder.
 It keeps its settings, saves and `hpl.log` in
-`~/.local/share/PenumbraOverture/` (Linux), not in the retail game's
+`~/.local/share/PenumbraRevival/Overture/` (Linux;
+`Documents/PenumbraRevival/Overture/` on Windows), not in the retail game's
 `~/.frictionalgames` folder, so the two never overwrite each other.
 
 ### Physics test
