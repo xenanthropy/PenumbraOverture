@@ -26,6 +26,19 @@ Add new entries at the top of the relevant section, one per fix:
 
 ROADMAP Phase 2.
 
+### OALWrapper Find modules: package name mismatch warnings
+- **Repo / commit:** OALWrapper `08aa2f2`
+- **Files:** `CMakeScripts/FindVorbis.cmake`, `CMakeScripts/FindVorbisFile.cmake`
+- **Problem:** configuring printed two CMake author warnings: the modules
+  passed `VORBIS` / `VORBISFILE` to `find_package_handle_standard_args`,
+  which doesn't match the package names `Vorbis` / `VorbisFile` (reported by
+  the owner on Arch Linux).
+- **Fix:** pass `Vorbis` / `VorbisFile`. CMake still sets the upper-case
+  `VORBIS_FOUND` / `VORBISFILE_FOUND` as well; nothing in the three repos
+  reads them.
+- **Verified:** a fresh configure (CMake 3.28) shows "Found Vorbis" and
+  "Found VorbisFile" with no warnings, and the whole game builds.
+
 ### Raise CMake minimums to 3.16
 - **Repo / commit:** OALWrapper `bd2100c`, HPL1Engine `83f1d15`, PenumbraOverture `9b003eb` on `claude/project-thread-msxp3s`
 - **Files:** CMakeLists.txt in each repo
