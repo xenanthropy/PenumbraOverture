@@ -166,18 +166,15 @@ the game too much.
   2026). Path: `newton-4.00/applications/toolsAndWrapers/newton-1.53` in
   https://github.com/JulioJerez/newton-dynamics (master, still being worked on).
   Licence: zlib.
-  - Our check: its `Newton.h` declares **every one** of the original 1.53
-    functions, including all 90 that HPL1 uses. So HPL1's physics code
-    could stay almost unchanged: no callback restructuring, no signature
-    porting.
-  - Five functions HPL1 uses are still stubs (`ndAssert(0)`):
-    `NewtonWorldFreezeBody`, `NewtonAddBodyImpulse`,
-    `NewtonHingeCalculateStopAlpha`, `NewtonSliderCalculateStopAccel`,
-    `NewtonCorkscrewCalculateStopAccel`. The last three are joint limits,
-    used for doors, levers and sliders.
-  - It is Windows-first right now. The CMake hard-codes MSVC flags, and
-    `NewtonUtils.h` uses `_finite`/`_isnan`, so it doesn't compile on GCC
-    yet. These are small portability fixes.
+  - Our first check: its `Newton.h` declares **every one** of the original
+    1.53 functions, including all 90 that HPL1 uses.
+  - **Corrected by the Phase 5 walkthrough (compiling it and checking
+    symbols):** 12 functions HPL1 calls are declared but have **no
+    definition** (only inside `#if 0`), and 8 more are stubs that do
+    nothing. The hinge/slider/corkscrew wrappers ignore HPL's limit
+    callbacks, and the contact callbacks run in a different order than
+    1.53. Details and the fix plan are below.
+  - It was Windows-first: MSVC-only CMake and 3 small GCC errors (fixed).
   - Underneath, it is the Newton 4 solver, so physics feel needs in-game
     testing (true of any option except the 32-bit blob).
 - **B. Port HPL1 to Newton 2.36** (ScummVM's approach). Proven to work, but
@@ -185,31 +182,41 @@ the game too much.
   files.
 - **C. Keep the 32-bit blob.** Dead end for 64-bit.
 
-### Plan if we go with A
+### Plan (A, approved 2026-11-26)
 
-**5.1 Vendor the 1.53 layer + its Newton 4 core**
-- **Repo/files:** new `HPL1Engine/external/newton-1.53/` (pinned to a
-  specific upstream commit, recorded in FIXES.md) + zlib licence. Our own
-  small CMake target (static library, no demos), instead of upstream's
-  MSVC-only CMakeLists.
-- **Verify:** the library builds on GCC/Clang 64-bit.
+**Priority: keep the physics feel as close to 1.53 as possible** (see
+CLAUDE.md). Where Newton 4 defaults and 1.53 disagree, choose 1.53.
 
-**5.2 GCC/Clang portability fixes in the layer**
-- `_finite`/`_isnan` → `std::isfinite`/`std::isnan`, any other MSVC-isms.
-- **Verify:** compiles cleanly with GCC 13.
+One commit per step, each logged in FIXES.md. Local changes to the layer are
+listed in `HPL1Engine/external/newton-1.53/README.md` and never sent upstream.
 
-**5.3 Fill in the stubs HPL1 needs**
-- The five functions above. We can ask the owner whether to keep these as
-  local patches or watch upstream for them.
-- **Risk:** medium. Joint limits directly affect doors and levers.
-- **Verify:** compiles; Newton's own demos (tutorial 05, joints) behave;
-  then in-game.
+1. ✅ Vendor the layer + its Newton 4 core, unmodified and pinned, into
+   `HPL1Engine/external/newton-1.53/` (no `demos/`, no upstream CMake).
+2. ✅ Our own CMake target `newton153`: static, C++17 for this target only,
+   scalar vector math on GCC/Clang, optimised even in Debug, links Threads.
+   Not linked into HPL yet (`EXCLUDE_FROM_ALL`).
+3. ✅ The 3 GCC fixes. The library builds on GCC 13 x86_64.
+4. Define the 12 missing functions HPL1 calls: `NewtonCollisionCollide`
+   (character controller, areas, weapons; via `ndContactSolver`),
+   `NewtonHinge/Slider/Corkscrew/BallGetJointForce`,
+   `NewtonBallGetJointAngle/Omega`, `NewtonMaterialGetContactForce`,
+   `NewtonBodySetFreezeTreshold`, `NewtonSetSolverModel`,
+   `NewtonSetFrictionModel`, `NewtonMaterialSetContinuousCollisionMode`.
+5. Fill the 8 stubs: `NewtonAddBodyImpulse`, `NewtonWorldFreezeBody`,
+   `NewtonBallSetConeLimits`, the three `Calculate Stop` functions, body
+   continuous-collision get/set.
+6. Make the joint wrappers honour HPL's limit callbacks (return value,
+   acceleration, min/max friction). **Highest risk for doors and levers.**
+7. Contact callbacks: run begin/process/end back to back per pair (HPL keeps
+   their state in statics), keep Newton single-threaded, 1 substep instead of
+   3, match 1.53's restitution clamp.
+8. Link HPL to `newton153`, drop the IMPORTED `libNewton.a` and
+   `HPL_DEPENDENCIES_DIR`.
+9. A small headless physics test (falling box, hinge limit, impulse Δv,
+   shape collision, callback order).
 
-**5.4 Hook into HPL1 and remove the blob**
-- Point HPL1 at the new target, drop the IMPORTED `libNewton.a`.
-  HPL1's `impl/*Newton*` files should need few or no changes.
-- **Verify:** HPL1Engine and the game link as a native 64-bit binary, with
-  no prebuilt libraries except Cg.
+After assets: in-game checks (Phase 6) and a side-by-side with the retail
+Steam build.
 
 ### Plan if we go with B
 

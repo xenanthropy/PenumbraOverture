@@ -176,6 +176,33 @@ ones (Phase 3), and all PenumbraOverture files compile.
   `stdstring` (see KNOWN_ISSUES.md), so watch for script compile or bind
   errors in the log on first run.
 
+### Newton 1.53 layer vendored and building (Phase 5, steps 1–3)
+- **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `42a464d` (vendor,
+  unmodified), `34c2977` (CMake target), `c608a72` (GCC fixes)
+- **Files:** new `external/newton-1.53/` (Julio Jerez's 1.53 layer from
+  JulioJerez/newton-dynamics `294f27f6cde10c3c269041c3c4944cefb0480dbf`,
+  `newton-4.00/applications/toolsAndWrapers/newton-1.53`, without `demos/`
+  and the MSVC-only CMake; includes its Newton 4 core, about 147k lines;
+  plus `LICENSE` (zlib), `README.md`, our own `CMakeLists.txt`);
+  `CMakeLists.txt`; in the layer: `NewtonUtils.h`, `NewtonVehicle.cpp`,
+  `joints/NewtonJoints.cpp`
+- **Problem:** Newton 1.53 only exists as a prebuilt 32-bit `libNewton.a`
+  with no source, so a 64-bit build can't link.
+- **Fix (so far):** vendored the layer and added a `newton153` static library
+  target (C++17 for that target only; `D_SCALAR_VECTOR_CLASS` on GCC/Clang as
+  upstream; warnings off; optimised even in Debug; links Threads). Fixed 3
+  GCC errors with no behaviour change: MSVC `_finite`/`_isnan` →
+  `std::isfinite`/`std::isnan`; an extra class qualifier on
+  `NewtonVehicleNotify::PostTransformUpdate`; a temporary `ndSharedPtr`
+  bound to a non-const reference in `NewtonJointUserData::GetUserData`.
+  The target is `EXCLUDE_FROM_ALL` and **not linked into HPL yet**.
+- **Verified:** `make newton153` builds a 64-bit (`elf64-x86-64`) static
+  library on GCC 13. The rest of the build is unchanged (still fails only at
+  the link, on the 32-bit `libNewton.a`). A symbol check against every
+  Newton function HPL calls finds exactly the 12 expected missing
+  definitions (see ROADMAP Phase 5, step 4). Not run: no physics has been
+  simulated yet.
+
 ### Replace GLee with GLEW
 - **Repo / commits:** HPL1Engine on `claude/project-thread-msxp3s`: `a45a8c5` (includes), `8bc2418`
   (glewInit), `eb2e44c` (extension checks), `f1646cf` (CMake),
@@ -215,6 +242,12 @@ _No entries yet._
 _No entries yet._
 
 ## Documentation
+
+### Physics feel priority in CLAUDE.md
+- **Repo / commit:** PenumbraOverture `8380476`
+- **Files:** CLAUDE.md
+- **Change:** recorded that the physics must feel as close to Newton 1.53 as
+  possible, and that 1.53 behaviour wins over Newton 4 defaults.
 
 ### Add CLAUDE.md, FIXES.md, KNOWN_ISSUES.md, ROADMAP.md
 - **Repo:** PenumbraOverture
