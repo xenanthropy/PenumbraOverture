@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: sleep the way the 1.53 library does (replaces the 10-step count)
+- **Repo:** HPL1Engine
+- **Commit:** `49d2484` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/NewtonBody.h, NewtonBody.cpp, NewtonHPL1Engine.cpp, newtonWorld.cpp, newton-4/source/ndBodyKinematic.h, newton-4/source/ndDynamicsUpdate.cpp, README.md, tests/newton153_test.cpp; external/newton-2.36/README.md
+- **Problem:** the 10-step quiet count (`7bb4dc3`, below) came from reading 1.53's documentation. Running the original 32-bit 1.53 library (test only) showed it was wrong. 1.53 ignores `framesCount`. It rests a quiet body at once, but keeps its velocity and skips the step. Newton 4 zeroed the velocity, which is what made the boat lamp stop dead. 1.53 also doesn't wake a resting body when its velocity is set (the layer did), and `NewtonWorldFreezeBody` keeps the velocity (the layer cleared it).
+- **Fix:** `ndNewtonBodyDynamic` applies the measured rule. A body is quiet when its start-of-step speed² and omega² are under 0.022 × max(t, 0.1), and its solved accel² and alpha² are under 2.64 × max(t, 0.01), where t is the `NewtonBodySetFreezeTreshold` value (1.53 default 0.01). When its whole island is quiet, it rests at its pre-step position and velocity. `NewtonWorldUnfreezeBody` only wakes. `SetVelocity`/`SetOmega` don't wake a resting body, but make an awake one take its next step. Small core change: `DetermineSleepStates` calls a new virtual `OnIslandRest` instead of zeroing velocities.
+- **Feel:** resting and waking now follow 1.53. In the boat's sway, a lamp hanging almost still waits for the tilt to build before moving, as in 1.53: it stands still 42 of 600 steps in the test (1.53: 44, previous layer: 8). Props keep their velocity through a rest instead of losing it. Bodies that HPL sets a velocity on while they're resting stay put, as in 1.53.
+- **Verified:** sleep checks rewritten from the library's measured behaviour. 73/73 pass on Newton 4. The original library passes all except the three safety nets this layer adds. The full game builds. In the headless boat scene the two-body lamp chain still swings less lively on Newton 4 than on 1.53, even with sleeping off, so that difference lies elsewhere and is being looked into. Not yet tried in game. The 2.36 option still uses the old count and fails 5 of the new sleep checks (it's now for comparison only).
+
 ### Newton layers: NewtonBodySetMatrix drops scale, as 1.53 did (missing boat notebook)
 - **Repo:** HPL1Engine
 - **Commit:** `607d960` on `claude/project-thread-msxp3s`
@@ -232,6 +241,7 @@ ones (Phase 3), and all PenumbraOverture files compile.
   errors in the log on first run.
 
 ### Newton 1.53 layer: a body rests only after framesCount quiet steps (Phase 6)
+- **Superseded** by the entry above (`49d2484`): measured against the original library, 1.53 doesn't use `framesCount`.
 - **Repo:** HPL1Engine
 - **Commit:** `7bb4dc3` on `claude/project-thread-msxp3s`
 - **Files:** external/newton-1.53/NewtonBody.h, NewtonHPL1Engine.cpp, newtonWorld.cpp, README.md, tests/newton153_test.cpp

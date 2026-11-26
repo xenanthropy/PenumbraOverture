@@ -226,7 +226,7 @@ It keeps its settings, saves and `hpl.log` in
 ### Physics test
 
 A headless test checks the Newton 1.53 layer the way the engine uses it
-(69 checks: collisions, joints and their limit callbacks, sleeping,
+(73 checks: collisions, joints and their limit callbacks, sleeping,
 impulses, materials and contact callbacks, the world box, the NaN guard,
 the spin cap and level meshes). It draws nothing, so it gives
 the same result on any machine; it doesn't replace playing the game. It is
@@ -240,7 +240,10 @@ Exit code 0 means every check passed. Run it after any change to
 `HPL1Engine/external/newton-1.53`. In a build configured with
 `-DHPL1_NEWTON_CORE=236`, the same checks run against the 2.36 core with
 `make newton236_test && ./HPL1Engine/external/newton-2.36/newton236_test`;
-run that after any change to `HPL1Engine/external/newton-2.36`. The source is
+run that after any change to `HPL1Engine/external/newton-2.36` (it fails
+five sleep checks, see its README). The original 32-bit 1.53 library can
+run the same test as a reference (test only; see the newton-1.53 README).
+The source is
 `HPL1Engine/external/newton-1.53/tests/newton153_test.cpp`.
 
 System packages (Ubuntu names): `libsdl1.2-dev libsdl-image1.2-dev
