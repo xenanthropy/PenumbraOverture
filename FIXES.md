@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: inertia of offset shapes about their centre, as in 1.53 (hatch tool spin)
+- **Repo:** HPL1Engine
+- **Commit:** `cff287c` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/NewtonCollision.cpp, README.md, tests/newton153_test.cpp
+- **Problem:** the mine's hatch tool could not be spun as fast as in retail. `NewtonConvexCollisionCalculateInertialMatrix` returned Newton 4's inertia about the shape's origin, but 1.53 returns it about the centre of mass it reports, which is what HPL1 passes to `NewtonBodySetMassMatrix`. Any collider offset from its body origin, and every compound, got too much inertia: 1.85 times about the hatch tool's spin axis, up to 19 times about other axes.
+- **Fix:** move the inertia to the shape's centre of mass (parallel axis theorem).
+- **Feel:** props with offset colliders or several parts now turn as easily as in 1.53. 1.53's errors for very small shapes (boxes under 0.001 m³ get less inertia, cylinders under about 7.5 cm radius get a wrong value, a 3 cm sphere gets none) are not copied, by Xenan's choice: Newton 4's correct values avoid the wild spinning of small props seen in retail. Because the hatch tool's rod is a thin cylinder, it may still turn a little slower than in retail (headless at a hard push: about 2.6 rad/s against 1.53's 3.1 to 3.9). Checked headlessly only.
+- **Verified:** headless hatch tool copy (same shapes, joints, grab force and slowdown as the game) spins faster, close to 1.53 once the rod's 1.53 inertia is put in by hand. Two new checks (84 total): an offset box has the same inertia as a centred one and reports the offset as its centre. 84/84 pass on the layer; the original library passes the new checks (still failing only the three safety nets). The full game builds. Not yet tried in game.
+
 ### Newton 1.53 layer: continuous collision, as in 1.53 (cans through walls)
 - **Repo:** HPL1Engine
 - **Commit:** `996ba43` on `claude/project-thread-msxp3s`
