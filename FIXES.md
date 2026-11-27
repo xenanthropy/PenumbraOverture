@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: ray casts through a deep broadphase tree (crash entering the spider caves)
+- **Repo:** HPL1Engine
+- **Commit:** `9dd96ad` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/newton-4/source/ndScene.h, ndScene.cpp, README.md, tests/newton153_test.cpp
+- **Problem:** climbing the ladder in the water cave tunnels to reach the spider caves (level01_12) crashed the game while it rebuilt the Spider AI nodes. Xenan's backtrace: SIGSEGV in `ndScene::RayCast`, called from `cAINodeContainer::FreePath` and `Compile`. Newton 4 adds new bodies to its broadphase tree one at a time and only rebalances the tree in the next update. HPL1 builds the AI node graph with many ray casts while the map loads, before the first update, so the tree can be hundreds of levels deep. The ray walk kept its stack in fixed 256-entry arrays and wrote past them, corrupting the stack.
+- **Fix:** a growable stack (`ndSceneTraversalStack`) for the ray cast and shape cast walks. It keeps 256 entries inline, so the usual case doesn't allocate, and moves to the heap when it needs more.
+- **Feel:** none. Casts hit the same bodies as before; they just no longer crash on a deep tree.
+- **Verified:** reproduced headlessly: a ray through 1000 boxes added before any update crashed, and after an update it didn't. Two new checks (86 total) cover both cases; 86/86 pass. The new "before update" check crashes without the fix. Only the Newton library was rebuilt, since the change is private to it. Not yet tried in game.
+
 ### Newton 1.53 layer: inertia of offset shapes about their centre, as in 1.53 (hatch tool spin)
 - **Repo:** HPL1Engine
 - **Commit:** `cff287c` on `claude/project-thread-msxp3s`
