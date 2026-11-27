@@ -168,6 +168,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Dependencies
 
+### Newton 1.53 layer: bodies made static and back with joints in place, as in 1.53 (mine cable)
+- **Repo:** HPL1Engine
+- **Commit:** `3469de0` on `claude/project-thread-msxp3s`
+- **Files:** external/newton-1.53/NewtonBody.cpp, newtonWorld.cpp, newton-4/source/ndWorld.h, newton-4/source/ndSkeletonContainer.h, README.md, tests/newton153_test.cpp
+- **Problem:** in the small shaft (level01_10) the double-ended cable (`modern_mine_contact`, ten ball-jointed bodies) could be plugged in by one end, but then the other end couldn't be grabbed, and with the panel end plugged in first the wall end flew across the map with `Newton: a body's position or velocity became NaN/inf`. The stick area makes the plugged-in body static by setting its mass to 0 (and back when unplugged). Newton 4 solves jointed chains as skeletons rooted at static bodies and only rebuilt them when a joint was added or removed, so the chain was still solved as if the plugged-in end were free. And once the cable lay on the floor against its cone limits with an end static, the skeleton's contact and limit rows made a matrix that isn't positive definite; the layer had switched off Newton 4's fallback for that, so the solve gave forces of about 1e14 and the chain went NaN.
+- **Fix:** rebuild the skeletons whenever a jointed body changes between static and dynamic, and turn the positive-definite fallback (`RegularizeLcp`) back on without changing the layer's regularizer. Only matrices that fail the test are changed.
+- **Feel:** none expected outside this case. The storage-room crane comparison gives identical numbers before and after, and the other 86 checks are unchanged. Checked headlessly only.
+- **Verified:** a headless copy of the cable (shapes, masses, damping, limits and freeze thresholds from the .ent/.dae, the stick area's attach, the grab's PID pull) run on the original 1.53 library and on the layer: on 1.53 the dragged end stays within 4 to 6 cm of the hand whichever end is plugged in; before the fix it stayed put (4.6 m behind) or went NaN; now 6 to 7 cm. Two new checks (88 total) pass on the layer, the original library and the 2.36 core, and fail without the fix. The full game builds. Not yet tried in game.
+
 ### Newton 1.53 layer: ray casts through a deep broadphase tree (crash entering the spider caves)
 - **Repo:** HPL1Engine
 - **Commit:** `9dd96ad` on `claude/project-thread-msxp3s`
