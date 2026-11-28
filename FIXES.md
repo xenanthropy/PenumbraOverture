@@ -654,6 +654,15 @@ ones (Phase 3), and all PenumbraOverture files compile.
 
 ## Gameplay and engine bugs
 
+### Helmet stuck in a Shaft 13 locker (map fix-up)
+- **Repo:** PenumbraOverture
+- **Commit:** `50a22d7` on `claude/project-thread-msxp3s`
+- **Files:** MapHandler.cpp, MapHandler.h
+- **Problem:** in level01_16_destroyed_shaft ("Shaft 13") the iron mine helmet hiding the blank note (`heml01`, upper middle locker) couldn't be lifted, thrown or knocked loose (Xenan). The map places it at 60 degrees, where its four collision boxes are 0.63 m wide; the locker is 0.56 m wide inside. So it starts about 3 cm into both side walls and 3.5 cm into the locker's floor box (the note plays no part). A headless copy of the locker, helmet and note (shapes, masses, materials and freeze thresholds from the .ent/.dae files, the grab's PID pull) shows the original 1.53 library holds it for a fraction of a second and then lets it twist free: 20 of 20 pulls follow the hand. The Newton 4 layer holds it wedged (0 of 20, still stuck after 20 s of pulling), and so does the 2.36 core (0 of 40). 1.53 seems to escape through its solver's inexactness (the helmet wobbles, its contact set changes and it pops out), not a rule the layer could copy. The layer also squeezes a body against opposite faces of one compound about 2.8 times as hard as 1.53 (11,762 N against 4,223 N in a test), but matching that alone doesn't free the helmet.
+- **Fix:** by Xenan's choice, a per-map fix-up instead of an engine change: the first time the map loads (never on a saved game), and only while the helmet is still within 5 cm of where the map puts it, it is turned to 30 degrees (0.55 m wide) and centred in the locker (x 1.40). It still covers the note.
+- **Feel:** none outside this helmet. Other props placed overlapping their surroundings like this could jam the same way; none known yet.
+- **Verified:** headless: at the new pose the helmet follows the hand in 10 of 10 pulls on the layer, with the note in place. The game builds with no warnings. Not yet tried in game. The test sources are in the project files (`helmet-check/`).
+
 ### Rotate a held object with the mouse (V), backported from Amnesia
 - **Repo:** PenumbraOverture
 - **Commit:** `4cf4490` on `claude/project-thread-msxp3s`

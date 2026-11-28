@@ -119,6 +119,13 @@ that exists is 32-bit (section 3a), so a 64-bit build cannot link it.
 
 ### Found in our build
 
+- **Props placed overlapping their surroundings can jam.** A dynamic prop
+  that starts wedged into static geometry (e.g. wider than the gap it sits
+  in) may wriggle free on the original 1.53 library but stay stuck on the
+  Newton 4 layer, which holds such a jam firmly. Found with the Shaft 13
+  locker helmet, fixed for that one prop by a map fix-up in
+  `cMapHandler::ApplyMapFixups` (see FIXES.md). Add other cases there.
+
 - **Menu text and cursor look soft at high resolutions.** At 2560x1440 the
   main menu's text and the mouse cursor look pixelated/blurry, and the cursor
   slightly stretched (Xenan). They are bitmap images drawn in a fixed
