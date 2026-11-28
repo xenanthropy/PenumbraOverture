@@ -215,6 +215,8 @@ public:
 	void LoadFromGlobal(cMapHandler_GlobalSave *apSave);
 
 private:
+	void ApplyMapFixups(const tString &asMapName);
+
 	void RenderItemEffect();
 
 	void PrintSoundsPlaying();

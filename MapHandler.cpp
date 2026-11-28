@@ -487,6 +487,8 @@ bool cMapHandler::Load(const tString &asFile,const tString& asStartPos)
 
 		if(bFirstTime)
 		{
+			ApplyMapFixups(cString::GetFileName(sMapName));
+
 			//Set a default name
 			msMapGameName = cString::To16Char(cString::SetFileExt(asFile,""));
 
@@ -1079,6 +1081,37 @@ void cMapHandler::LoadSaveData(cSavedWorld* apSavedWorld)
 	}
 
 }
+//-----------------------------------------------------------------------
+
+// PenumbraRevival: map placements that only worked on the original Newton
+// 1.53 library. Applied the first time a map is loaded (never to a saved
+// game), and only while the entity is still where the map put it.
+void cMapHandler::ApplyMapFixups(const tString &asMapName)
+{
+	// level01_16 ("Shaft 13"), the locker room: the iron mine helmet over the
+	// blank note is placed at 60 degrees, where its collision boxes are 0.63 m
+	// wide in a locker 0.56 m wide inside, so it starts 3 cm into both side
+	// walls. 1.53 wriggled it free when grabbed; the Newton 4 layer holds it
+	// wedged. Turn it to 30 degrees (0.55 m wide), still over the note.
+	if(asMapName == "level01_16_destroyed_shaft")
+	{
+		iGameEntity *pHelmet = GetGameEntity("heml01",false);
+		if(pHelmet && pHelmet->GetBodyNum() == 1)
+		{
+			iPhysicsBody *pBody = pHelmet->GetBody(0);
+			cVector3f vPos = pBody->GetLocalPosition();
+			const cVector3f vMapPos(1.389457f, 1.222066f, -24.733540f);
+			if(cMath::Vector3Dist(vPos, vMapPos) < 0.05f)
+			{
+				cMatrixf mtxNew = cMath::MatrixRotateY(cMath::ToRad(30.0f));
+				mtxNew.SetTranslation(cVector3f(1.40f, vPos.y, vPos.z));
+				pBody->SetMatrix(mtxNew);
+				Log(" Map fix-up: turned 'heml01' to fit its locker\n");
+			}
+		}
+	}
+}
+
 //-----------------------------------------------------------------------
 
 void cMapHandler::OnStart()
